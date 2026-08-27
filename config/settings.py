@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     # Third-party apps
     'rest_framework',
     'corsheaders',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -127,3 +128,7 @@ REST_FRAMEWORK = {
 
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+# Custom User Model
+AUTH_USER_MODEL = 'accounts.CustomUser'
