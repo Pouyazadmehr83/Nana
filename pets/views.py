@@ -1,6 +1,9 @@
 from rest_framework import viewsets, permissions, status, parsers
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+
 from .models import PetReport, PetImage, Sighting
 from .serializers import (
     PetReportListSerializer,
@@ -9,16 +12,32 @@ from .serializers import (
     SightingSerializer
 )
 from .permissions import IsOwnerOrReadOnly
+from .filters import PetReportFilter
 
 
 class PetReportViewSet(viewsets.ModelViewSet):
     queryset = PetReport.objects.all()
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
+    # تنظیمات فیلترینگ، جستجو و مرتب‌سازی
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = PetReportFilter
+    search_fields = [
+        'title',
+        'name',
+        'breed',
+        'color',
+        'special_features',
+        'city',
+        'district',
+        'address_description'
+    ]
+    ordering_fields = ['event_date', 'created_at', 'reward', 'city']
+    ordering = ['-created_at']
+
     def get_queryset(self):
         # جلوگیری کامل از خطای N+1 Query
-        queryset = PetReport.objects.select_related('user').prefetch_related('images', 'sightings__user')
-        return queryset
+        return PetReport.objects.select_related('user').prefetch_related('images', 'sightings__user')
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -46,6 +65,11 @@ class SightingViewSet(viewsets.ModelViewSet):
     serializer_class = SightingSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
+
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['report']
+    ordering_fields = ['seen_at', 'created_at']
+    ordering = ['-seen_at']
 
     def get_queryset(self):
         qs = super().get_queryset()

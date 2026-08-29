@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -136,3 +137,147 @@ class SightingAPITests(APITestCase):
         payload = {"location_description": "توضیحات تکمیلی محل رویت"}
         response = self.client.patch(self.sighting_detail_url, payload)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+
+class PetReportFilterAPITests(APITestCase):
+    """تست‌های اختصاصی فیلترینگ پیشرفته، جستجو و مرتب‌سازی"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(phone_number="09127777777", password="password123")
+        self.url = reverse('pet-report-list')
+        now = timezone.now()
+
+        # ساخت سه رکورد با موقعیت و خصوصیات مختلف
+        self.report_tehran = PetReport.objects.create(
+            user=self.user,
+            title="گربه گمشده پرشین تهران",
+            name="برفی",
+            breed="پرشین",
+            pet_type="CAT",
+            report_type="LOST",
+            gender="FEMALE",
+            color="سفید",
+            city="تهران",
+            district="سعادت آباد",
+            reward=500000,
+            has_collar=True,
+            is_resolved=False,
+            event_date=now - timedelta(days=2),
+            latitude=35.6892,
+            longitude=51.3890
+        )
+        self.report_tabriz = PetReport.objects.create(
+            user=self.user,
+            title="سگ هاسکی تبریز",
+            name="مکس",
+            breed="هاسکی",
+            pet_type="DOG",
+            report_type="FOUND",
+            gender="MALE",
+            color="طوسی و سفید",
+            city="تبریز",
+            district="ولیعصر",
+            reward=0,
+            has_collar=False,
+            is_resolved=False,
+            event_date=now - timedelta(days=10),
+            latitude=38.0800,
+            longitude=46.2919
+        )
+        self.report_isfahan = PetReport.objects.create(
+            user=self.user,
+            title="طوطی برزیلی سبز اصفهان",
+            name="فندق",
+            breed="برزیلی",
+            pet_type="BIRD",
+            report_type="LOST",
+            gender="UNKNOWN",
+            color="سبز فسفری",
+            city="اصفهان",
+            district="چهارباغ",
+            reward=1200000,
+            has_collar=False,
+            is_resolved=True,
+            event_date=now - timedelta(days=1),
+            latitude=32.6546,
+            longitude=51.6680
+        )
+
+    def test_filter_by_pet_type(self):
+        """فیلتر بر اساس نوع حیوان (فقط سگ‌ها برگردانده شوند)"""
+        response = self.client.get(self.url, {'pet_type': 'DOG'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['title'], "سگ هاسکی تبریز")
+
+    def test_filter_by_report_type(self):
+        """فیلتر بر اساس نوع آگهی (LOST vs FOUND)"""
+        response = self.client.get(self.url, {'report_type': 'FOUND'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['id'], self.report_tabriz.id)
+
+    def test_filter_by_city_case_insensitive(self):
+        """فیلتر بر اساس شهر"""
+        response = self.client.get(self.url, {'city': 'تهران'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['city'], "تهران")
+
+    def test_filter_by_reward_range(self):
+        """فیلتر بازه مژدگانی (حداقل و حداکثر)"""
+        response = self.client.get(self.url, {'min_reward': 600000, 'max_reward': 2000000})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['id'], self.report_isfahan.id)
+
+    def test_filter_has_reward(self):
+        """فیلتر آگهی‌های دارای مژدگانی یا بدون مژدگانی"""
+        response = self.client.get(self.url, {'has_reward': 'true'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 2)
+
+        response_no_reward = self.client.get(self.url, {'has_reward': 'false'})
+        self.assertEqual(response_no_reward.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_no_reward.data['count'], 1)
+        self.assertEqual(response_no_reward.data['results'][0]['id'], self.report_tabriz.id)
+
+    def test_search_by_keyword(self):
+        """جستجوی متنی روی کلمه پرشین یا نام حیوان یا توضیحات"""
+        response = self.client.get(self.url, {'search': 'پرشین'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['id'], self.report_tehran.id)
+
+        response_name = self.client.get(self.url, {'search': 'فندق'})
+        self.assertEqual(response_name.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_name.data['count'], 1)
+        self.assertEqual(response_name.data['results'][0]['id'], self.report_isfahan.id)
+
+    def test_filter_by_radius(self):
+        """فیلتر شعاعی نزدیک تهران (مختصات میدان آزادی) نباید آگهی تبریز یا اصفهان را بیاورد"""
+        response = self.client.get(self.url, {
+            'lat': 35.7000,
+            'lng': 51.3300,
+            'radius_km': 15
+        })
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['city'], "تهران")
+
+    def test_ordering_by_reward(self):
+        """مرتب‌سازی آگهی‌ها بر اساس مژدگانی نزولی (-reward)"""
+        response = self.client.get(self.url, {'ordering': '-reward'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data['results']
+        rewards = [r['reward'] for r in results]
+        self.assertEqual(rewards, sorted(rewards, reverse=True))
+
+    def test_filter_by_date_range(self):
+        """فیلتر بازه زمانی حادثه"""
+        now = timezone.now()
+        from_date = (now - timedelta(days=5)).isoformat()
+        response = self.client.get(self.url, {'from_date': from_date})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # آگهی تبریز مربوط به ۱۰ روز قبل است و نباید باشد، تهران (۲ روز پیش) و اصفهان (۱ روز پیش) باید باشند
+        self.assertEqual(response.data['count'], 2)
