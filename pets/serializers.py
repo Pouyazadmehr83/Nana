@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 from .models import PetReport, PetImage, Sighting
 
 
@@ -38,6 +40,7 @@ class PetReportListSerializer(serializers.ModelSerializer):
             'main_image', 'created_at'
         ]
 
+    @extend_schema_field(OpenApiTypes.URI)
     def get_main_image(self, obj):
         # واکشی امن و کش‌شده در سطح پایتون
         images = list(obj.images.all())

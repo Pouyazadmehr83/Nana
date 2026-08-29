@@ -1,12 +1,25 @@
+import io
 from datetime import timedelta
+from PIL import Image
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework import status
 from rest_framework.test import APITestCase
-from pets.models import PetReport, Sighting
+from pets.models import PetReport, Sighting, PetImage
 
 User = get_user_model()
+
+
+def generate_test_image(filename="test.jpg", format="JPEG", size=(100, 100), color="blue"):
+    """تولید فایل تصویر تستی در حافظه با Pillow"""
+    file = io.BytesIO()
+    img = Image.new("RGB", size, color=color)
+    img.save(file, format=format)
+    file.seek(0)
+    content_type = f"image/{format.lower()}"
+    return SimpleUploadedFile(filename, file.getvalue(), content_type=content_type)
 
 
 class PetReportAPITests(APITestCase):
@@ -30,6 +43,9 @@ class PetReportAPITests(APITestCase):
 
         self.list_create_url = reverse('pet-report-list')
         self.detail_url = reverse('pet-report-detail', kwargs={'pk': self.report.pk})
+        self.my_reports_url = reverse('pet-report-my-reports')
+        self.toggle_resolved_url = reverse('pet-report-toggle-resolved', kwargs={'pk': self.report.pk})
+        self.upload_image_url = reverse('pet-report-upload-image', kwargs={'pk': self.report.pk})
 
     def test_unauthenticated_user_can_list_reports(self):
         """کاربر مهمان باید بتواند لیست آگهی‌ها را ببیند"""
@@ -99,6 +115,95 @@ class PetReportAPITests(APITestCase):
         }
         response = self.client.post(self.list_create_url, payload)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_my_reports_action(self):
+        """دریافت آگهی‌های ثبت‌شده توسط کاربر جاری"""
+        # ساخت یک آگهی برای کاربر B
+        PetReport.objects.create(
+            user=self.user_b,
+            title="آگهی کاربر دوم",
+            pet_type="DOG",
+            report_type="LOST",
+            color="قهوه‌ای",
+            city="شیراز",
+            event_date=timezone.now()
+        )
+
+        # درخواست با کاربر A
+        self.client.force_authenticate(user=self.user_a)
+        response = self.client.get(self.my_reports_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
+        self.assertEqual(response.data['results'][0]['title'], "گربه گمشده پرشین")
+
+        # درخواست مهمان
+        self.client.logout()
+        res_unauth = self.client.get(self.my_reports_url)
+        self.assertEqual(res_unauth.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_toggle_resolved_action(self):
+        """تغییر وضعیت پرونده به پیدا شد / فعال توسط مالک"""
+        self.client.force_authenticate(user=self.user_a)
+        self.assertFalse(self.report.is_resolved)
+
+        # تغییر به پیدا شد (True)
+        response1 = self.client.post(self.toggle_resolved_url)
+        self.assertEqual(response1.status_code, status.HTTP_200_OK)
+        self.assertTrue(response1.data['is_resolved'])
+        self.report.refresh_from_db()
+        self.assertTrue(self.report.is_resolved)
+
+        # تغییر مجدد به فعال (False)
+        response2 = self.client.post(self.toggle_resolved_url)
+        self.assertEqual(response2.status_code, status.HTTP_200_OK)
+        self.assertFalse(response2.data['is_resolved'])
+
+    def test_toggle_resolved_forbidden_for_other_users(self):
+        """کاربر غیر مالک نباید بتواند وضعیت آگهی را تغییر دهد"""
+        self.client.force_authenticate(user=self.user_b)
+        response = self.client.post(self.toggle_resolved_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class PetImageUploadSecurityTests(APITestCase):
+    """تست‌های امنیت و اعتبارسنجی آپلود تصاویر"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(phone_number="09129990011", password="password123")
+        self.report = PetReport.objects.create(
+            user=self.user,
+            title="گربه گمشده",
+            pet_type="CAT",
+            report_type="LOST",
+            color="سفید",
+            city="تهران",
+            event_date=timezone.now()
+        )
+        self.upload_url = reverse('pet-report-upload-image', kwargs={'pk': self.report.pk})
+        self.client.force_authenticate(user=self.user)
+
+    def test_upload_valid_image_success(self):
+        """آپلود موفق تصویر استاندارد JPEG و PNG"""
+        image_file = generate_test_image("pet.jpg", "JPEG")
+        response = self.client.post(self.upload_url, {"image": image_file, "is_main": True}, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(PetImage.objects.filter(report=self.report).count(), 1)
+
+    def test_upload_invalid_file_extension(self):
+        """رد فایل با پسوند غیرمجاز (مثلاً .txt یا .pdf)"""
+        fake_file = SimpleUploadedFile("malicious.txt", b"This is a text file", content_type="text/plain")
+        response = self.client.post(self.upload_url, {"image": fake_file}, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("image", response.data)
+
+    def test_upload_file_size_limit(self):
+        """رد فایلی با حجم بیش از ۵ مگابایت"""
+        # ساخت فایل بزرگ فرضی (بیش از ۵ مگابایت)
+        large_content = b"x" * (6 * 1024 * 1024)
+        large_file = SimpleUploadedFile("large_image.jpg", large_content, content_type="image/jpeg")
+        response = self.client.post(self.upload_url, {"image": large_file}, format="multipart")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("image", response.data)
 
 
 class SightingAPITests(APITestCase):

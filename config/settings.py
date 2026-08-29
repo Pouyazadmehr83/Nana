@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
+    'drf_spectacular',
     'corsheaders',
     'accounts',
     'pets'
@@ -79,6 +80,7 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD', 'nana_password'),
         'HOST': os.getenv('DB_HOST', 'db'),
         'PORT': os.getenv('DB_PORT', '5432'),
+        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', 60)),
     }
 }
 
@@ -133,7 +135,35 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 12,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': os.getenv('THROTTLE_ANON', '120/minute'),
+        'user': os.getenv('THROTTLE_USER', '1000/minute'),
+        'auth': os.getenv('THROTTLE_AUTH', '20/minute'),
+    },
 }
+
+# Spectacular OpenAPI Documentation Settings
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Nana Pet Lost & Found API',
+    'DESCRIPTION': 'مستندات جامع وب‌سرویس پلتفرم نانا (سامانه آگهی حیوانات گمشده و پیدا شده با احراز هویت JWT و فیلترینگ جغرافیایی)',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api/v[0-9]',
+    'TAGS': [
+        {'name': 'Auth', 'description': 'احراز هویت، ثبت‌نام، دریافت و مدیریت توکن‌های JWT و پروفایل کاربر'},
+        {'name': 'Pets', 'description': 'مدیریت آگهی‌های حیوانات، جستجوی متنی، فیلتر پیشرفته و شعاع مکانی'},
+        {'name': 'Sightings', 'description': 'ثبت و مشاهده گزارش‌های دیده‌شدن حیوانات گمشده'},
+        {'name': 'General', 'description': 'سرویس‌های عمومی و بررسی وضعیت سرور (Health Check)'},
+    ],
+}
+
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
@@ -143,8 +173,44 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL', 'True' if DEBUG else 'False') == 'True'
+cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', '')
+if cors_origins_env:
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
 
+# Security Headers
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# Structured Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.getenv('LOG_LEVEL', 'INFO'),
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.CustomUser'

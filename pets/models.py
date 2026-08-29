@@ -2,6 +2,7 @@ from decimal import Decimal
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
+from .validators import validate_image_file
 
 
 class PetReport(models.Model):
@@ -102,7 +103,7 @@ class PetImage(models.Model):
         related_name='images',
         verbose_name="آگهی مربوطه"
     )
-    image = models.ImageField(upload_to='pets/%Y/%m/', verbose_name="تصویر")
+    image = models.ImageField(upload_to='pets/%Y/%m/', validators=[validate_image_file], verbose_name="تصویر")
     is_main = models.BooleanField(default=False, verbose_name="تصویر اصلی؟")
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ آپلود")
 
@@ -145,7 +146,7 @@ class Sighting(models.Model):
         blank=True,
         verbose_name="طول جغرافیایی"
     )
-    image = models.ImageField(upload_to='sightings/%Y/%m/', null=True, blank=True, verbose_name="تصویر حیوان دیده‌شده")
+    image = models.ImageField(upload_to='sightings/%Y/%m/', null=True, blank=True, validators=[validate_image_file], verbose_name="تصویر حیوان دیده‌شده")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="زمان ثبت گزارش")
 
     class Meta:
