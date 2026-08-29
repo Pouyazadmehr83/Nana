@@ -13,6 +13,9 @@ class CustomUserManager(BaseUserManager):
         if not phone_number:
             raise ValueError('وارد کردن شماره موبایل الزامی است.')
         
+        if extra_fields.get('email'):
+            extra_fields['email'] = self.normalize_email(extra_fields['email'])
+
         user = self.model(phone_number=phone_number, **extra_fields)
         if password:
             user.set_password(password)
