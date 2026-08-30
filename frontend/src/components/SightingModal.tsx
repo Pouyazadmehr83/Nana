@@ -34,7 +34,8 @@ interface Props {
 
 export default function SightingModal({ reportId, reportTitle, centerLat, centerLng, onClose, onSuccess }: Props) {
   const [desc, setDesc] = useState('');
-  const [seenAt, setSeenAt] = useState(() => new Date().toISOString().slice(0, 16));
+  const [seenDate, setSeenDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [seenTime, setSeenTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [image, setImage] = useState<File | null>(null);
@@ -51,9 +52,12 @@ export default function SightingModal({ reportId, reportTitle, centerLat, center
     setLoading(true); setError('');
     try {
       const fd = new FormData();
+      const timeStr = seenTime || '12:00';
+      const isoDateTime = new Date(`${seenDate}T${timeStr}:00`).toISOString();
+
       fd.append('report', String(reportId));
       fd.append('location_description', desc);
-      fd.append('seen_at', new Date(seenAt).toISOString());
+      fd.append('seen_at', isoDateTime);
       if (lat !== null) fd.append('latitude', lat.toFixed(6));
       if (lng !== null) fd.append('longitude', lng.toFixed(6));
       if (image) fd.append('image', image);
@@ -98,15 +102,26 @@ export default function SightingModal({ reportId, reportTitle, centerLat, center
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">🕐 زمان مشاهده *</label>
-            <input
-              type="datetime-local"
-              className="form-control"
-              value={seenAt}
-              onChange={e => setSeenAt(e.target.value)}
-              required
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">📅 تاریخ مشاهده *</label>
+              <input
+                type="date"
+                className="form-control"
+                value={seenDate}
+                onChange={e => setSeenDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">🕐 ساعت مشاهده</label>
+              <input
+                type="time"
+                className="form-control"
+                value={seenTime}
+                onChange={e => setSeenTime(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Map */}

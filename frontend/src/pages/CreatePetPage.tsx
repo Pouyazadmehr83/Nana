@@ -47,7 +47,8 @@ export default function CreatePetPage() {
     has_collar: false,
     microchip_id: '',
     special_features: '',
-    event_date: '',
+    event_date: new Date().toISOString().slice(0, 10),
+    event_time: '12:00',
     city: '',
     district: '',
     address_description: '',
@@ -78,7 +79,15 @@ export default function CreatePetPage() {
     setError('');
     try {
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)));
+      const timeStr = form.event_time || '12:00';
+      const isoDateTime = new Date(`${form.event_date}T${timeStr}:00`).toISOString();
+
+      Object.entries(form).forEach(([k, v]) => {
+        if (k !== 'event_date' && k !== 'event_time') {
+          fd.append(k, String(v));
+        }
+      });
+      fd.append('event_date', isoDateTime);
       if (lat !== null) fd.append('latitude', lat.toFixed(6));
       if (lng !== null) fd.append('longitude', lng.toFixed(6));
 
@@ -197,8 +206,12 @@ export default function CreatePetPage() {
             <h2 className="form-section-title">📍 زمان و مکان</h2>
             <div className="form-grid">
               <div className="form-group">
-                <label className="form-label">تاریخ و ساعت حادثه *</label>
-                <input type="datetime-local" name="event_date" className="form-control" required value={form.event_date} onChange={handleChange} />
+                <label className="form-label">تاریخ حادثه *</label>
+                <input type="date" name="event_date" className="form-control" required value={form.event_date} onChange={handleChange} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">ساعت حادثه (تقریبی)</label>
+                <input type="time" name="event_time" className="form-control" value={form.event_time} onChange={handleChange} />
               </div>
               <div className="form-group">
                 <label className="form-label">شهر *</label>
