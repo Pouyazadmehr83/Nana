@@ -4,6 +4,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
 
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,14 +25,12 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(
 
 # Application definition
 INSTALLED_APPS = [
-    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'cloudinary',
 
     # Third-party apps
     'rest_framework',
@@ -42,7 +45,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -51,6 +53,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+try:
+    import whitenoise
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+except ImportError:
+    pass
 
 ROOT_URLCONF = 'config.urls'
 
@@ -77,7 +85,7 @@ ASGI_APPLICATION = 'config.asgi.application'
 # Database
 # Using PostgreSQL configured via DATABASE_URL or individual environment variables
 DATABASE_URL = os.getenv('DATABASE_URL')
-if DATABASE_URL:
+if DATABASE_URL and dj_database_url:
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
@@ -135,6 +143,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Cloudinary Storage settings (used when credentials are provided)
 CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
 if CLOUDINARY_CLOUD_NAME:
+    INSTALLED_APPS.insert(0, 'cloudinary_storage')
+    INSTALLED_APPS.append('cloudinary')
     CLOUDINARY_STORAGE = {
         'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
         'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
