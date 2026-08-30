@@ -142,7 +142,7 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="navbar-guest-actions">
-                <Link to="/login" className="btn btn-ghost btn-sm">ورود / ثبت‌نام</Link>
+                <Link to="/login" className="btn btn-ghost btn-sm btn-nav-login">ورود / ثبت‌نام</Link>
               </div>
             )}
 

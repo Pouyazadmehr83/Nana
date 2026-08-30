@@ -7,6 +7,7 @@
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(226, 232, 240, 0.85);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  width: 100%;
 }
 
 [data-theme="dark"] .navbar {
@@ -18,28 +19,31 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
-  gap: 16px;
+  height: 60px;
+  gap: 12px;
+  width: 100%;
 }
 
 /* Start Section */
 .navbar-start {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  min-width: 0;
 }
 
 .navbar-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   text-decoration: none;
   color: inherit;
+  flex-shrink: 0;
 }
 
 .navbar-logo-badge {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 10px;
   background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
   color: #ffffff;
@@ -48,6 +52,7 @@
   justify-content: center;
   box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3);
   transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .navbar-logo:hover .navbar-logo-badge {
@@ -63,7 +68,7 @@
   display: flex;
   align-items: baseline;
   gap: 2px;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 900;
   color: var(--gray-900);
   line-height: 1.1;
@@ -80,22 +85,24 @@
   font-size: 0.65rem;
   color: var(--gray-500);
   font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Divar-Style City Selector */
 .navbar-city-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 5px 10px;
   border-radius: var(--radius-pill);
   background: var(--gray-100);
   border: 1px solid transparent;
   color: var(--gray-700);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .navbar-city-btn:hover {
@@ -105,10 +112,11 @@
 
 .navbar-city-btn .city-icon {
   color: var(--gray-500);
+  flex-shrink: 0;
 }
 
 .navbar-city-btn .city-label {
-  max-width: 90px;
+  max-width: 80px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -129,6 +137,7 @@
   color: var(--gray-600);
   text-decoration: none;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .navbar-tab-link:hover {
@@ -146,25 +155,26 @@
 .navbar-end {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .navbar-user-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .navbar-user-chip {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px 4px 6px;
+  padding: 3px 8px 3px 4px;
   border-radius: var(--radius-pill);
   background: var(--gray-100);
   text-decoration: none;
   color: var(--gray-800);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
   transition: background 0.15s ease;
 }
@@ -184,12 +194,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .btn-logout {
   color: var(--gray-500);
   font-size: 0.8rem;
-  padding: 6px 10px;
+  padding: 5px 8px;
 }
 
 .btn-logout:hover {
@@ -203,8 +214,15 @@
   gap: 6px;
   font-weight: 700;
   border-radius: var(--radius-pill);
-  padding: 8px 18px;
-  font-size: 0.88rem;
+  padding: 7px 16px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.btn-nav-login {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding: 6px 12px;
 }
 
 /* City Modal */
@@ -352,11 +370,46 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+/* ── Mobile Responsive Overhaul ── */
 @media (max-width: 768px) {
   .navbar-center {
     display: none;
   }
+  
   .navbar-brand-tagline {
+    display: none;
+  }
+
+  /* On mobile, Post Ad button is inside bottom navigation */
+  .btn-post-ad {
+    display: none;
+  }
+
+  .btn-logout {
+    display: none;
+  }
+
+  .navbar-user-label {
+    display: none;
+  }
+
+  .navbar-inner {
+    height: 54px;
+    gap: 8px;
+  }
+
+  .navbar-city-btn {
+    padding: 4px 8px;
+    font-size: 0.76rem;
+  }
+
+  .navbar-city-btn .city-label {
+    max-width: 65px;
+  }
+}
+
+@media (max-width: 380px) {
+  .navbar-logo-text-group {
     display: none;
   }
 }
