@@ -14,14 +14,6 @@ import {
 } from '../components/Icons';
 import './HomePage.css';
 
-const CATEGORIES: { value: PetType | ''; label: string; icon: string }[] = [
-  { value: '', label: 'همه حیوانات', icon: '🐾' },
-  { value: 'DOG', label: 'سگ', icon: '🐕' },
-  { value: 'CAT', label: 'گربه', icon: '🐈' },
-  { value: 'BIRD', label: 'پرنده', icon: '🐦' },
-  { value: 'OTHER', label: 'سایر', icon: '🐰' },
-];
-
 export default function HomePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [pets, setPets] = useState<PetReportList[]>([]);
@@ -121,7 +113,7 @@ export default function HomePage() {
 
   return (
     <div className="home-feed-page page-enter">
-      {/* ── 1. Top Web-App Search & Filter Bar ── */}
+      {/* ── 1. Top Web-App Search Bar ── */}
       <div className="feed-header-bar">
         <div className="container feed-header-inner">
           <form className="feed-search-form" onSubmit={handleSearchSubmit}>
@@ -156,54 +148,76 @@ export default function HomePage() {
       </div>
 
       <div className="container feed-main-container">
-        {/* ── 2. Horizontal Category Chips ── */}
-        <div className="feed-categories-scroll">
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.value}
-              type="button"
-              className={`feed-category-chip ${petType === cat.value ? 'active' : ''}`}
-              onClick={() => setPetType(cat.value)}
-            >
-              <span className="cat-chip-icon">{cat.icon}</span>
-              <span className="cat-chip-label">{cat.label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* ── 3. Quick Status Filter Tabs ── */}
+        {/* ── 2. Unified Clean Filters Row ── */}
         <div className="feed-quick-filters">
           <div className="quick-filter-group">
+            {/* Status filters */}
             <button
               type="button"
-              className={`quick-pill ${reportType === '' ? 'active' : ''}`}
-              onClick={() => setReportType('')}
+              className={`quick-pill ${reportType === '' && petType === '' && hasReward === null ? 'active' : ''}`}
+              onClick={() => { setReportType(''); setPetType(''); setHasReward(null); }}
             >
               همه آگهی‌ها
             </button>
+
             <button
               type="button"
               className={`quick-pill pill-red ${reportType === 'LOST' ? 'active' : ''}`}
               onClick={() => setReportType(reportType === 'LOST' ? '' : 'LOST')}
             >
               <span className="dot dot-red" />
-              حیوانات گمشده
+              گمشده
             </button>
+
             <button
               type="button"
               className={`quick-pill pill-green ${reportType === 'FOUND' ? 'active' : ''}`}
               onClick={() => setReportType(reportType === 'FOUND' ? '' : 'FOUND')}
             >
               <span className="dot dot-green" />
-              حیوانات پیدا شده
+              پیدا شده
             </button>
+
             <button
               type="button"
               className={`quick-pill pill-gold ${hasReward === true ? 'active' : ''}`}
               onClick={() => setHasReward(hasReward === true ? null : true)}
             >
               <GiftIcon size={14} />
-              دارای مژدگانی
+              مژدگانی‌دار
+            </button>
+
+            {/* Category filters in same clean row */}
+            <button
+              type="button"
+              className={`quick-pill pill-blue ${petType === 'DOG' ? 'active' : ''}`}
+              onClick={() => setPetType(petType === 'DOG' ? '' : 'DOG')}
+            >
+              🐕 سگ
+            </button>
+
+            <button
+              type="button"
+              className={`quick-pill pill-blue ${petType === 'CAT' ? 'active' : ''}`}
+              onClick={() => setPetType(petType === 'CAT' ? '' : 'CAT')}
+            >
+              🐈 گربه
+            </button>
+
+            <button
+              type="button"
+              className={`quick-pill pill-blue ${petType === 'BIRD' ? 'active' : ''}`}
+              onClick={() => setPetType(petType === 'BIRD' ? '' : 'BIRD')}
+            >
+              🐦 پرنده
+            </button>
+
+            <button
+              type="button"
+              className={`quick-pill pill-blue ${petType === 'OTHER' ? 'active' : ''}`}
+              onClick={() => setPetType(petType === 'OTHER' ? '' : 'OTHER')}
+            >
+              🐰 سایر
             </button>
           </div>
 
@@ -219,7 +233,7 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* ── 4. Feed Subheader (Count & Context) ── */}
+        {/* ── 3. Feed Status Row (Count & Tip) ── */}
         <div className="feed-status-row">
           <div className="feed-count-badge">
             <span>
@@ -230,18 +244,18 @@ export default function HomePage() {
 
           <div className="feed-tip">
             <SparklesIcon size={14} />
-            <span>آگهی‌های جدید بلافاصله منتشر می‌شوند</span>
+            <span>آگهی‌ها بلافاصله منتشر می‌شوند</span>
           </div>
         </div>
 
-        {/* ── 5. Error Alert ── */}
+        {/* ── 4. Error Alert ── */}
         {error && (
           <div className="alert alert-error" style={{ marginBottom: 20 }}>
             {error}
           </div>
         )}
 
-        {/* ── 6. Ads Grid ── */}
+        {/* ── 5. Ads Grid ── */}
         {loading ? (
           <div className="feed-grid">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -273,7 +287,7 @@ export default function HomePage() {
               ))}
             </div>
 
-            {/* ── 7. Load More Pagination ── */}
+            {/* ── 6. Load More Pagination ── */}
             {hasNext && (
               <div className="feed-pagination">
                 <button
