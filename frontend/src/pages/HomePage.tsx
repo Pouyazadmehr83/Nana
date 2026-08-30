@@ -148,14 +148,13 @@ export default function HomePage() {
       </div>
 
       <div className="container feed-main-container">
-        {/* ── 2. Unified Clean Filters Row ── */}
+        {/* ── 2. Clean Status Filters Row (All, Lost, Found, Reward) ── */}
         <div className="feed-quick-filters">
           <div className="quick-filter-group">
-            {/* Status filters */}
             <button
               type="button"
-              className={`quick-pill ${reportType === '' && petType === '' && hasReward === null ? 'active' : ''}`}
-              onClick={() => { setReportType(''); setPetType(''); setHasReward(null); }}
+              className={`quick-pill ${reportType === '' && hasReward === null ? 'active' : ''}`}
+              onClick={() => { setReportType(''); setHasReward(null); }}
             >
               همه آگهی‌ها
             </button>
@@ -185,39 +184,6 @@ export default function HomePage() {
             >
               <GiftIcon size={14} />
               مژدگانی‌دار
-            </button>
-
-            {/* Category filters in same clean row */}
-            <button
-              type="button"
-              className={`quick-pill pill-blue ${petType === 'DOG' ? 'active' : ''}`}
-              onClick={() => setPetType(petType === 'DOG' ? '' : 'DOG')}
-            >
-              🐕 سگ
-            </button>
-
-            <button
-              type="button"
-              className={`quick-pill pill-blue ${petType === 'CAT' ? 'active' : ''}`}
-              onClick={() => setPetType(petType === 'CAT' ? '' : 'CAT')}
-            >
-              🐈 گربه
-            </button>
-
-            <button
-              type="button"
-              className={`quick-pill pill-blue ${petType === 'BIRD' ? 'active' : ''}`}
-              onClick={() => setPetType(petType === 'BIRD' ? '' : 'BIRD')}
-            >
-              🐦 پرنده
-            </button>
-
-            <button
-              type="button"
-              className={`quick-pill pill-blue ${petType === 'OTHER' ? 'active' : ''}`}
-              onClick={() => setPetType(petType === 'OTHER' ? '' : 'OTHER')}
-            >
-              🐰 سایر
             </button>
           </div>
 
