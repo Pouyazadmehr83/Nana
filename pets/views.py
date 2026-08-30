@@ -186,9 +186,10 @@ class PetReportViewSet(viewsets.ModelViewSet):
         report = self.get_object()
         report.is_resolved = not report.is_resolved
         report.save(update_fields=['is_resolved', 'updated_at'])
-        invalidate_pet_reports_cache()
+        # cache invalidation is handled automatically by pets/signals.py
         serializer = PetReportDetailSerializer(report, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 
 @extend_schema_view(
