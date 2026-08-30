@@ -205,6 +205,19 @@ class PetImageUploadSecurityTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("image", response.data)
 
+    def test_optimize_pet_image_task(self):
+        """بررسی عملکرد تسک سلری در ریسایز و فشرده‌سازی تصاویر"""
+        from pets.tasks import optimize_pet_image
+        large_img_file = generate_test_image("large.jpg", "JPEG", size=(1600, 1200))
+        pet_img = PetImage.objects.create(report=self.report, image=large_img_file)
+
+        result = optimize_pet_image(pet_img.id)
+        self.assertIn("successfully optimized", result)
+
+        with Image.open(pet_img.image.path) as img:
+            self.assertLessEqual(img.width, 1200)
+
+
 
 class SightingAPITests(APITestCase):
     def setUp(self):

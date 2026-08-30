@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import timedelta
@@ -214,3 +215,16 @@ LOGGING = {
 
 # Custom User Model
 AUTH_USER_MODEL = 'accounts.CustomUser'
+
+# Celery & Redis Broker Settings
+redis_host = os.getenv('REDIS_HOST', 'redis')
+redis_port = os.getenv('REDIS_PORT', '6379')
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{redis_host}:{redis_port}/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', f'redis://{redis_host}:{redis_port}/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Tehran'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv or os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False') == 'True'

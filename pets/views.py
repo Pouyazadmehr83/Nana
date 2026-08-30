@@ -14,6 +14,7 @@ from .serializers import (
 )
 from .permissions import IsOwnerOrReadOnly
 from .filters import PetReportFilter
+from .tasks import optimize_pet_image
 
 
 @extend_schema_view(
@@ -103,7 +104,9 @@ class PetReportViewSet(viewsets.ModelViewSet):
         report = self.get_object()
         serializer = PetImageSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(report=report)
+            image_instance = serializer.save(report=report)
+            # اجرای غیرهمگام تسک در پس‌زمینه با Celery بدون معطل کردن کاربر
+            optimize_pet_image.delay(image_instance.id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
