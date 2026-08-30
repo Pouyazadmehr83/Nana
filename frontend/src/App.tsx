@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import HomePage       from './pages/HomePage';
 import PetDetailPage  from './pages/PetDetailPage';
 import CreatePetPage  from './pages/CreatePetPage';
@@ -37,6 +38,7 @@ function AppRoutes() {
           <Route path="*"           element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <Footer />
     </BrowserRouter>
   );
 }
