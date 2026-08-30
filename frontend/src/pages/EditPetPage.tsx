@@ -113,8 +113,8 @@ export default function EditPetPage() {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)));
-      if (lat !== null) fd.append('latitude', String(lat));
-      if (lng !== null) fd.append('longitude', String(lng));
+      if (lat !== null) fd.append('latitude', lat.toFixed(6));
+      if (lng !== null) fd.append('longitude', lng.toFixed(6));
       await petsApi.update(Number(id), fd);
 
       // Upload new images

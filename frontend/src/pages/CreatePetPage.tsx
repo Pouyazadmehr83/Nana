@@ -79,8 +79,8 @@ export default function CreatePetPage() {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([k, v]) => fd.append(k, String(v)));
-      if (lat !== null) fd.append('latitude', String(lat));
-      if (lng !== null) fd.append('longitude', String(lng));
+      if (lat !== null) fd.append('latitude', lat.toFixed(6));
+      if (lng !== null) fd.append('longitude', lng.toFixed(6));
 
       const { data } = await petsApi.create(fd);
 

@@ -22,6 +22,16 @@ class SightingSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'user', 'created_at']
 
+    def validate_latitude(self, value):
+        if value is not None:
+            return round(value, 6)
+        return value
+
+    def validate_longitude(self, value):
+        if value is not None:
+            return round(value, 6)
+        return value
+
     def create(self, validated_data):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
@@ -68,6 +78,16 @@ class PetReportDetailSerializer(serializers.ModelSerializer):
             'is_resolved', 'images', 'sightings', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+    def validate_latitude(self, value):
+        if value is not None:
+            return round(value, 6)
+        return value
+
+    def validate_longitude(self, value):
+        if value is not None:
+            return round(value, 6)
+        return value
 
     def validate(self, attrs):
         # بررسی دقیق مختصات با در نظر گرفتن داده‌های فعلی در حالت PATCH

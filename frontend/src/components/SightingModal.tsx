@@ -54,8 +54,8 @@ export default function SightingModal({ reportId, reportTitle, centerLat, center
       fd.append('report', String(reportId));
       fd.append('location_description', desc);
       fd.append('seen_at', new Date(seenAt).toISOString());
-      if (lat !== null) fd.append('latitude', String(lat));
-      if (lng !== null) fd.append('longitude', String(lng));
+      if (lat !== null) fd.append('latitude', lat.toFixed(6));
+      if (lng !== null) fd.append('longitude', lng.toFixed(6));
       if (image) fd.append('image', image);
       await sightingsApi.create(fd);
       onSuccess();
