@@ -1,0 +1,115 @@
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  z-index: 1000;
+  padding: 0 8px calc(env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+  justify-content: space-around;
+  align-items: center;
+}
+
+[data-theme="dark"] .mobile-bottom-nav {
+  background: rgba(15, 23, 42, 0.94);
+  border-top-color: rgba(51, 65, 85, 0.8);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  body {
+    padding-bottom: 70px;
+  }
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  text-decoration: none;
+  color: var(--gray-500);
+  font-size: 0.72rem;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  gap: 2px;
+  padding-top: 4px;
+}
+
+.bottom-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.bottom-nav-item:hover,
+.bottom-nav-item.active {
+  color: var(--primary-600);
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+  transform: translateY(-2px);
+}
+
+.bottom-nav-item.active .bottom-nav-label {
+  font-weight: 700;
+  color: var(--primary-600);
+}
+
+.bottom-nav-item.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 3px;
+  background: var(--primary-600);
+  border-radius: 0 0 4px 4px;
+}
+
+/* Central Prominent CTA */
+.bottom-nav-cta {
+  position: relative;
+  top: -12px;
+}
+
+.bottom-nav-cta-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(225, 29, 72, 0.35);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.bottom-nav-cta:hover .bottom-nav-cta-btn,
+.bottom-nav-cta.active .bottom-nav-cta-btn {
+  transform: scale(1.08);
+  box-shadow: 0 8px 20px rgba(225, 29, 72, 0.45);
+}
+
+.bottom-nav-cta .bottom-nav-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--primary-600);
+  margin-top: 2px;
+}

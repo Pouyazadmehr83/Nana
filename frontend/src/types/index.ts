@@ -22,7 +22,7 @@ export interface PetImage {
 
 export interface Sighting {
   id: number;
-  report: number;
+  report: string;
   user: number | null;
   user_phone: string | null;
   seen_at: string;
@@ -34,7 +34,7 @@ export interface Sighting {
 }
 
 export interface PetReportList {
-  id: number;
+  id: string;
   title: string;
   report_type: ReportType;
   pet_type: PetType;

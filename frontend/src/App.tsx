@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
+import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
 import HomePage       from './pages/HomePage';
 import PetDetailPage  from './pages/PetDetailPage';
@@ -39,6 +40,7 @@ function AppRoutes() {
         </Routes>
       </main>
       <Footer />
+      <BottomNav />
     </BrowserRouter>
   );
 }

@@ -29,7 +29,7 @@ function LocationPicker({ pos, onSelect }: { pos: [number, number] | null; onSel
 }
 
 interface Props {
-  reportId: number;
+  reportId: string | number;
   reportTitle: string;
   centerLat?: number;
   centerLng?: number;

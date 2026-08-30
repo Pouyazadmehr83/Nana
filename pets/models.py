@@ -1,3 +1,4 @@
+import uuid
 from decimal import Decimal
 from django.db import models
 from django.conf import settings
@@ -6,6 +7,13 @@ from .validators import validate_image_file
 
 
 class PetReport(models.Model):
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        verbose_name="شناسه یکتا"
+    )
+
     # کلاس‌های Choices باید حتماً قبل از فیلدها تعریف شوند
     class ReportType(models.TextChoices):
         LOST = 'LOST', 'گمشده'

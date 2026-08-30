@@ -125,11 +125,12 @@ export default function MapPage() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
             {visible.map(pet => {
-              // We load detail for coords — for list view use city as label
+              // Deterministic spread for list view mock coords if exact not present
+              const hash = String(pet.id).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
               return (
                 <Marker
                   key={pet.id}
-                  position={[35.7 + (pet.id % 20) * 0.01, 51.4 + (pet.id % 15) * 0.01]}
+                  position={[35.7 + (hash % 20) * 0.01, 51.4 + (hash % 15) * 0.01]}
                   icon={makeIcon(pet.report_type === 'LOST')}
                 >
                   <Popup>

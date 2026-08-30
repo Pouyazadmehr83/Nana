@@ -25,7 +25,7 @@ export default function MyReportsPage() {
     load();
   }, []);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string | number) => {
     if (!window.confirm('آیا مطمئن هستید؟')) return;
     try {
       await petsApi.delete(id);
@@ -35,7 +35,7 @@ export default function MyReportsPage() {
     }
   };
 
-  const handleToggle = async (id: number) => {
+  const handleToggle = async (id: string | number) => {
     try {
       const { data } = await petsApi.toggleResolved(id);
       setPets(prev => prev.map(p => p.id === id ? { ...p, is_resolved: data.is_resolved } : p));

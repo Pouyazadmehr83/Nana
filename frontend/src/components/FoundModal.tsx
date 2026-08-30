@@ -3,7 +3,7 @@ import { petsApi, sightingsApi } from '../services/api';
 import './Modal.css';
 
 interface Props {
-  reportId: number;
+  reportId: string | number;
   reportTitle: string;
   contactPhone: string;
   onClose: () => void;

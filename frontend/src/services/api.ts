@@ -68,23 +68,23 @@ export const petsApi = {
   list: (params?: Record<string, string | number | boolean>) =>
     api.get('/pets/reports/', { params }),
 
-  detail: (id: number) => api.get(`/pets/reports/${id}/`),
+  detail: (id: string | number) => api.get(`/pets/reports/${id}/`),
 
   create: (data: FormData) =>
     api.post('/pets/reports/', data, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
-  update: (id: number, data: FormData) =>
+  update: (id: string | number, data: FormData) =>
     api.patch(`/pets/reports/${id}/`, data, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
-  delete: (id: number) => api.delete(`/pets/reports/${id}/`),
+  delete: (id: string | number) => api.delete(`/pets/reports/${id}/`),
 
   myReports: (params?: Record<string, string | number>) =>
     api.get('/pets/reports/my_reports/', { params }),
 
-  toggleResolved: (id: number) =>
+  toggleResolved: (id: string | number) =>
     api.post(`/pets/reports/${id}/toggle_resolved/`),
 
-  uploadImage: (id: number, formData: FormData) =>
+  uploadImage: (id: string | number, formData: FormData) =>
     api.post(`/pets/reports/${id}/upload_image/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
@@ -92,7 +92,7 @@ export const petsApi = {
 
 // ── Sightings Endpoints ──
 export const sightingsApi = {
-  list: (reportId?: number) =>
+  list: (reportId?: string | number) =>
     api.get('/pets/sightings/', { params: reportId ? { report: reportId } : {} }),
 
   create: (data: FormData) =>

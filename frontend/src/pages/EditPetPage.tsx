@@ -90,7 +90,7 @@ export default function EditPetPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const { data } = await petsApi.detail(Number(id)) as { data: PetReportDetail };
+        const { data } = await petsApi.detail(id!) as { data: PetReportDetail };
         // Check ownership
         if (isAuthenticated && user && user.id !== data.user) {
           navigate(`/pets/${id}`);
@@ -106,7 +106,7 @@ export default function EditPetPage() {
           title: data.title,
           name: data.name || '',
           breed: data.breed || '',
-          color: data.color,
+          color: data.color || '',
           gender: data.gender,
           age: data.age || '',
           has_collar: data.has_collar,
@@ -163,13 +163,13 @@ export default function EditPetPage() {
       fd.append('event_date', isoDateTime);
       if (lat !== null) fd.append('latitude', lat.toFixed(6));
       if (lng !== null) fd.append('longitude', lng.toFixed(6));
-      await petsApi.update(Number(id), fd);
+      await petsApi.update(id!, fd);
 
       // Upload new images
       for (const file of newImages) {
         const imgFd = new FormData();
         imgFd.append('image', file);
-        await petsApi.uploadImage(Number(id), imgFd);
+        await petsApi.uploadImage(id!, imgFd);
       }
       setSuccess(true);
       setTimeout(() => navigate(`/pets/${id}`), 1200);

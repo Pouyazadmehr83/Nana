@@ -43,7 +43,7 @@ export default function PetDetailPage() {
 
   const loadPet = async () => {
     try {
-      const { data } = await petsApi.detail(Number(id));
+      const { data } = await petsApi.detail(id!);
       setPet(data);
       setError(null);
     } catch {
