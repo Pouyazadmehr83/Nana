@@ -21,7 +21,13 @@ def optimize_pet_image(self, image_id):
         if not pet_img.image:
             return f"No image associated with PetImage id {image_id}."
 
-        img_path = pet_img.image.path
+        # اگر استوریج ابری باشد (مانند Cloudinary)، نیازی به دستکاری محلی با Pillow نیست
+        try:
+            img_path = pet_img.image.path
+        except NotImplementedError:
+            logger.info(f"Image {image_id} is stored on cloud storage (e.g. Cloudinary). Auto-optimized via CDN.")
+            return f"Image {image_id} is on cloud storage. CDN auto-optimized."
+
         if not os.path.exists(img_path):
             logger.warning(f"File {img_path} does not exist on disk.")
             return f"File {img_path} does not exist."
@@ -43,7 +49,7 @@ def optimize_pet_image(self, image_id):
                 new_height = int(float(img.height) * float(ratio))
                 img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
 
-            # ذخیره مجدد با بهینه‌سازی حجم (از format_to_save که قبل از تبدیل ذخیره شد استفاده می‌شود)
+            # ذخیره مجدد با بهینه‌سازی حجم
             if format_to_save == 'JPEG':
                 img.save(img_path, format="JPEG", quality=80, optimize=True)
             elif format_to_save == 'WEBP':

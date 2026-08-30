@@ -21,7 +21,7 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
         200: OpenApiResponse(description='سرویس فعال است و مشکلی ندارد.')
     }
 )
-@api_view(['GET'])
+@api_view(['GET', 'HEAD'])
 @permission_classes([AllowAny])
 def health_check(request):
     """Simple API status health-check endpoint"""
@@ -39,7 +39,7 @@ def health_check(request):
         200: OpenApiResponse(description='سرویس فعال است.')
     }
 )
-@api_view(['GET'])
+@api_view(['GET', 'HEAD'])
 @permission_classes([AllowAny])
 def root_view(request):
     """Root API endpoint providing service info and links"""

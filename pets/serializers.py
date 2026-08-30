@@ -10,6 +10,18 @@ class PetImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image', 'is_main', 'uploaded_at']
         read_only_fields = ['id', 'uploaded_at']
 
+    def validate_image(self, file):
+        # حداکثر حجم مجاز: ۵ مگابایت
+        max_size = 5 * 1024 * 1024
+        if file.size > max_size:
+            raise serializers.ValidationError("حجم تصویر نباید بیشتر از ۵ مگابایت باشد.")
+        
+        # بررسی پسوند فایل
+        valid_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.heic')
+        if not file.name.lower().endswith(valid_extensions):
+            raise serializers.ValidationError("فرمت تصویر باید یکی از موارد JPG, PNG, WEBP باشد.")
+        return file
+
 
 class SightingSerializer(serializers.ModelSerializer):
     user_phone = serializers.ReadOnlyField(source='user.phone_number')
