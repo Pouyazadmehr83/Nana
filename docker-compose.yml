@@ -25,12 +25,17 @@ services:
       - "6380:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   web:
     build: .
     container_name: nana_django
     restart: always
-    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --threads 2 --timeout 120
+    # entrypoint.sh اجرای migrate+collectstatic را پیش از gunicorn انجام می‌دهد
     volumes:
       - .:/app
       - staticfiles_data:/app/staticfiles
@@ -48,13 +53,14 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 
   celery:
     build: .
     container_name: nana_celery
     restart: always
-    command: celery -A config worker -l info
+    entrypoint: []
+    command: ["celery", "-A", "config", "worker", "-l", "info"]
     volumes:
       - .:/app
       - media_data:/app/media
@@ -69,7 +75,7 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
 
   nginx:
     image: nginx:1.27-alpine

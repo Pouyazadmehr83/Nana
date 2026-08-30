@@ -1,0 +1,117 @@
+.pet-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--white);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition), box-shadow var(--transition);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.pet-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 12px 40px rgba(255,107,157,.22);
+}
+
+/* Image area */
+.pet-card-img-wrap {
+  position: relative;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--pink-50), var(--pink-100));
+}
+.pet-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-slow);
+}
+.pet-card:hover .pet-card-img {
+  transform: scale(1.06);
+}
+.pet-card-img-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  opacity: 0.4;
+}
+
+/* Overlays */
+.pet-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.4);
+}
+.pet-card-resolved {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(255,255,255,.9);
+  color: #16a34a;
+}
+
+/* Body */
+.pet-card-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.pet-card-type {
+  align-self: flex-start;
+  font-size: 0.72rem;
+}
+
+.pet-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pet-card-meta {
+  font-size: 0.8rem;
+  color: var(--gray-500);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pet-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--gray-100);
+}
+
+.pet-card-reward {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rose);
+  background: var(--pink-50);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}

@@ -1,0 +1,21 @@
+.my-reports-page { padding: 40px 0 80px; }
+.my-reports-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.my-reports-header h1 { font-size: 1.8rem; }
+
+.my-reports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+
+.my-report-item { display: flex; flex-direction: column; gap: 10px; }
+
+.my-report-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 4px;
+  flex-wrap: wrap;
+}

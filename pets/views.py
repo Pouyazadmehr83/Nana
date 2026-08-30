@@ -18,7 +18,6 @@ from .filters import PetReportFilter
 from .tasks import optimize_pet_image
 from .caching import (
     get_normalized_cache_key,
-    invalidate_pet_reports_cache,
     CACHE_TTL_PET_LIST
 )
 
@@ -114,16 +113,16 @@ class PetReportViewSet(viewsets.ModelViewSet):
         return response
 
     def perform_create(self, serializer):
+        # سیگنال post_save به صورت خودکار کش را invalidate می‌کند
         serializer.save(user=self.request.user)
-        invalidate_pet_reports_cache()
 
     def perform_update(self, serializer):
+        # سیگنال post_save به صورت خودکار کش را invalidate می‌کند
         serializer.save()
-        invalidate_pet_reports_cache()
 
     def perform_destroy(self, instance):
+        # سیگنال post_delete به صورت خودکار کش را invalidate می‌کند
         instance.delete()
-        invalidate_pet_reports_cache()
 
     @extend_schema(
         tags=['Pets'],
@@ -144,7 +143,7 @@ class PetReportViewSet(viewsets.ModelViewSet):
         serializer = PetImageSerializer(data=request.data)
         if serializer.is_valid():
             image_instance = serializer.save(report=report)
-            invalidate_pet_reports_cache()
+            # سیگنال post_save روی PetImage به صورت خودکار کش را invalidate می‌کند
             # اجرای غیرهمگام تسک در پس‌زمینه با Celery بدون معطل کردن کاربر
             optimize_pet_image.delay(image_instance.id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -241,3 +240,8 @@ class SightingViewSet(viewsets.ModelViewSet):
         if report_id:
             qs = qs.filter(report_id=report_id)
         return qs
+
+    def perform_create(self, serializer):
+        """ثبت user در سطح ViewSet برای اطمینان از consistency"""
+        user = self.request.user if self.request.user.is_authenticated else None
+        serializer.save(user=user)

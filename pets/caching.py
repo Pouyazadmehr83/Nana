@@ -43,7 +43,7 @@ def invalidate_pet_reports_cache():
         if raw_client and hasattr(raw_client, 'get_client'):
             client = raw_client.get_client()
             # جستجو و حذف امن با scan_iter
-            pattern = "*pet_reports_list:*"
+            pattern = "*nana*pet_reports_list*"
             keys_to_delete = list(client.scan_iter(match=pattern))
             if keys_to_delete:
                 client.delete(*keys_to_delete)

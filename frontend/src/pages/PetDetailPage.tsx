@@ -1,0 +1,265 @@
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { petsApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import type { PetReportDetail } from '../types';
+import { PET_TYPE_LABELS, REPORT_TYPE_LABELS, GENDER_LABELS } from '../types';
+import './PetDetailPage.css';
+
+// Fix leaflet marker icons
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl:       'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+
+function absUrl(url: string | null) {
+  if (!url) return null;
+  return url.startsWith('http') ? url : `${API_BASE}${url}`;
+}
+
+export default function PetDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const [pet, setPet] = useState<PetReportDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeImg, setActiveImg] = useState(0);
+  const [resolving, setResolving] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await petsApi.detail(Number(id));
+        setPet(data);
+      } catch {
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id, navigate]);
+
+  const handleToggleResolved = async () => {
+    if (!pet) return;
+    setResolving(true);
+    try {
+      const { data } = await petsApi.toggleResolved(pet.id);
+      setPet(data);
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!pet || !window.confirm('آیا مطمئن هستید؟ این عمل قابل بازگشت نیست.')) return;
+    try {
+      await petsApi.delete(pet.id);
+      navigate('/');
+    } catch {
+      alert('خطا در حذف آگهی');
+    }
+  };
+
+  if (loading) return (
+    <div className="loading-center" style={{ minHeight: '60vh' }}>
+      <div className="spinner" style={{ width: 48, height: 48 }} />
+    </div>
+  );
+
+  if (!pet) return null;
+
+  const isOwner = isAuthenticated && user && user.id === pet.user;
+  const lat = pet.latitude ? parseFloat(pet.latitude) : null;
+  const lng = pet.longitude ? parseFloat(pet.longitude) : null;
+  const hasMap = lat !== null && lng !== null;
+
+  const images = pet.images.length > 0
+    ? pet.images
+    : [];
+
+  return (
+    <div className="pet-detail-page page-enter">
+      <div className="container">
+        {/* Breadcrumb */}
+        <div className="breadcrumb">
+          <Link to="/">خانه</Link>
+          <span>›</span>
+          <span>{pet.title}</span>
+        </div>
+
+        <div className="pet-detail-layout">
+          {/* Left: Images + Map */}
+          <div className="pet-detail-media">
+            {/* Image Gallery */}
+            <div className="gallery">
+              <div className="gallery-main">
+                {images.length > 0 ? (
+                  <img
+                    src={absUrl(images[activeImg]?.image) || ''}
+                    alt={pet.title}
+                    className="gallery-main-img"
+                  />
+                ) : (
+                  <div className="gallery-placeholder">
+                    <span style={{ fontSize: '6rem' }}>
+                      {pet.pet_type === 'CAT' ? '🐈' : pet.pet_type === 'DOG' ? '🐕' : pet.pet_type === 'BIRD' ? '🐦' : '🐾'}
+                    </span>
+                    <p>تصویری ثبت نشده</p>
+                  </div>
+                )}
+              </div>
+              {images.length > 1 && (
+                <div className="gallery-thumbs">
+                  {images.map((img, i) => (
+                    <img
+                      key={img.id}
+                      src={absUrl(img.image) || ''}
+                      alt=""
+                      className={`gallery-thumb ${i === activeImg ? 'active' : ''}`}
+                      onClick={() => setActiveImg(i)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Map */}
+            {hasMap && (
+              <div className="detail-map-wrap">
+                <h3 className="detail-section-title">📍 موقعیت روی نقشه</h3>
+                <MapContainer center={[lat!, lng!]} zoom={14} className="detail-map">
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <Marker position={[lat!, lng!]}>
+                    <Popup>{pet.title}</Popup>
+                  </Marker>
+                  <Circle center={[lat!, lng!]} radius={300} pathOptions={{ color: '#FF6B9D', fillOpacity: 0.1 }} />
+                </MapContainer>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Info */}
+          <div className="pet-detail-info">
+            {/* Header */}
+            <div className="detail-header">
+              <div className="flex gap-2 items-center" style={{ flexWrap: 'wrap' }}>
+                <span className={`badge ${pet.report_type === 'LOST' ? 'badge-lost' : 'badge-found'}`}>
+                  {pet.report_type === 'LOST' ? '🔴' : '🟢'} {REPORT_TYPE_LABELS[pet.report_type]}
+                </span>
+                <span className="badge badge-type">{PET_TYPE_LABELS[pet.pet_type]}</span>
+                {pet.is_resolved && <span className="badge badge-resolved">✅ پیدا شد / حل شد</span>}
+              </div>
+              <h1 className="detail-title">{pet.title}</h1>
+              <p className="detail-location">📍 {pet.city}{pet.district ? ` — ${pet.district}` : ''}</p>
+            </div>
+
+            {/* Info Grid */}
+            <div className="info-grid">
+              {pet.name && <InfoRow icon="🏷️" label="نام" value={pet.name} />}
+              <InfoRow icon="🗓️" label="تاریخ حادثه" value={new Date(pet.event_date).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' })} />
+              <InfoRow icon="🎨" label="رنگ" value={pet.color} />
+              {pet.breed && <InfoRow icon="🐾" label="نژاد" value={pet.breed} />}
+              <InfoRow icon="⚥" label="جنسیت" value={GENDER_LABELS[pet.gender]} />
+              {pet.age && <InfoRow icon="📅" label="سن" value={pet.age} />}
+              <InfoRow icon="🔗" label="قلاده" value={pet.has_collar ? 'دارد' : 'ندارد'} />
+              {pet.microchip_id && <InfoRow icon="💾" label="میکروچیپ" value={pet.microchip_id} />}
+              {pet.contact_phone && <InfoRow icon="📞" label="تماس" value={pet.contact_phone} />}
+              {pet.reward > 0 && <InfoRow icon="🎁" label="مژدگانی" value={`${pet.reward.toLocaleString('fa-IR')} تومان`} highlight />}
+            </div>
+
+            {/* Special features */}
+            {pet.special_features && (
+              <div className="detail-block">
+                <h3 className="detail-section-title">✨ ویژگی‌های خاص</h3>
+                <p className="detail-text">{pet.special_features}</p>
+              </div>
+            )}
+
+            {/* Address */}
+            {pet.address_description && (
+              <div className="detail-block">
+                <h3 className="detail-section-title">📍 توضیحات محل</h3>
+                <p className="detail-text">{pet.address_description}</p>
+              </div>
+            )}
+
+            {/* Owner actions */}
+            {isOwner && (
+              <div className="owner-actions">
+                <Link to={`/edit/${pet.id}`} className="btn btn-outline">✏️ ویرایش</Link>
+                <button
+                  className="btn btn-primary"
+                  onClick={handleToggleResolved}
+                  disabled={resolving}
+                >
+                  {pet.is_resolved ? '🔓 بازگشایی پرونده' : '✅ علامت‌گذاری پیدا شد'}
+                </button>
+                <button className="btn btn-ghost" onClick={handleDelete} style={{ color: '#ef4444' }}>
+                  🗑️ حذف
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sightings */}
+        {pet.sightings.length > 0 && (
+          <div className="sightings-section">
+            <h2 className="detail-section-title" style={{ fontSize: '1.2rem', marginBottom: 20 }}>
+              👁️ گزارش‌های دیده‌شدن ({pet.sightings.length})
+            </h2>
+            <div className="sightings-grid">
+              {pet.sightings.map(s => (
+                <div key={s.id} className="sighting-card card-floating">
+                  <div className="flex justify-between items-center" style={{ marginBottom: 8 }}>
+                    <span className="text-sm font-medium">📍 {s.location_description}</span>
+                    <span className="text-xs text-muted">
+                      {new Date(s.seen_at).toLocaleDateString('fa-IR')}
+                    </span>
+                  </div>
+                  {s.user_phone && <p className="text-xs text-muted">📞 {s.user_phone}</p>}
+                  {s.image && (
+                    <img src={absUrl(s.image) || ''} alt="دیده‌شدن" className="sighting-img" />
+                  )}
+                  {s.latitude && s.longitude && (
+                    <div className="sighting-map-wrap">
+                      <MapContainer
+                        center={[parseFloat(s.latitude), parseFloat(s.longitude)]}
+                        zoom={13}
+                        className="sighting-map"
+                        dragging={false}
+                        scrollWheelZoom={false}
+                        zoomControl={false}
+                      >
+                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                        <Marker position={[parseFloat(s.latitude), parseFloat(s.longitude)]} />
+                      </MapContainer>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({ icon, label, value, highlight = false }: { icon: string; label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={`info-row ${highlight ? 'info-row-highlight' : ''}`}>
+      <span className="info-icon">{icon}</span>
+      <span className="info-label">{label}</span>
+      <span className="info-value">{value}</span>
+    </div>
+  );
+}

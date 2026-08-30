@@ -27,7 +27,9 @@ def optimize_pet_image(self, image_id):
             return f"File {img_path} does not exist."
 
         with Image.open(img_path) as img:
-            format_to_save = img.format if img.format in ('JPEG', 'PNG', 'WEBP') else 'JPEG'
+            # ذخیره فرمت قبل از هرگونه تبدیل (convert/resize فرمت را None می‌کنند در Pillow)
+            original_format = img.format
+            format_to_save = original_format if original_format in ('JPEG', 'PNG', 'WEBP') else 'JPEG'
 
             if img.mode in ("RGBA", "LA", "P") and format_to_save == 'JPEG':
                 img = img.convert("RGB")
@@ -41,7 +43,7 @@ def optimize_pet_image(self, image_id):
                 new_height = int(float(img.height) * float(ratio))
                 img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
 
-            # ذخیره مجدد با بهینه‌سازی حجم
+            # ذخیره مجدد با بهینه‌سازی حجم (از format_to_save که قبل از تبدیل ذخیره شد استفاده می‌شود)
             if format_to_save == 'JPEG':
                 img.save(img_path, format="JPEG", quality=80, optimize=True)
             elif format_to_save == 'WEBP':
@@ -49,7 +51,7 @@ def optimize_pet_image(self, image_id):
             elif format_to_save == 'PNG':
                 img.save(img_path, format="PNG", optimize=True)
             else:
-                img.save(img_path, quality=80, optimize=True)
+                img.save(img_path, format="JPEG", quality=80, optimize=True)
 
         logger.info(f"Image {image_id} successfully optimized.")
         return f"Image {image_id} successfully optimized."
