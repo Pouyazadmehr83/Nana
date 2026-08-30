@@ -31,7 +31,34 @@ def health_check(request):
     })
 
 
+@extend_schema(
+    tags=['General'],
+    summary='صفحه اصلی API',
+    description='خوش‌آمدگویی و راهنمای اندپوینت‌های API پلتفرم نانا',
+    responses={
+        200: OpenApiResponse(description='سرویس فعال است.')
+    }
+)
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def root_view(request):
+    """Root API endpoint providing service info and links"""
+    return Response({
+        'status': 'online',
+        'name': 'Nana Pet Lost & Found API',
+        'version': '1.0.0',
+        'docs': '/api/docs/swagger/',
+        'health': '/api/health/',
+        'endpoints': {
+            'pets': '/api/v1/pets/reports/',
+            'auth': '/api/v1/auth/',
+            'sightings': '/api/v1/pets/sightings/',
+        }
+    })
+
+
 urlpatterns = [
+    path('', root_view, name='root'),
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),
     path('api/health/', health_check, name='health-check'),
