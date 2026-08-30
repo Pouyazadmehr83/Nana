@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APITestCase
 from pets.models import PetReport, Sighting, PetImage
@@ -24,6 +25,7 @@ def generate_test_image(filename="test.jpg", format="JPEG", size=(100, 100), col
 
 class PetReportAPITests(APITestCase):
     def setUp(self):
+        cache.clear()
         # ساخت دو کاربر تستی
         self.user_a = User.objects.create_user(phone_number="09121111111", password="password123")
         self.user_b = User.objects.create_user(phone_number="09122222222", password="password123")
@@ -169,6 +171,7 @@ class PetImageUploadSecurityTests(APITestCase):
     """تست‌های امنیت و اعتبارسنجی آپلود تصاویر"""
 
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(phone_number="09129990011", password="password123")
         self.report = PetReport.objects.create(
             user=self.user,
@@ -218,9 +221,9 @@ class PetImageUploadSecurityTests(APITestCase):
             self.assertLessEqual(img.width, 1200)
 
 
-
 class SightingAPITests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.reporter_owner = User.objects.create_user(phone_number="09123333333", password="password123")
         self.sighting_user = User.objects.create_user(phone_number="09124444444", password="password123")
 
@@ -261,6 +264,7 @@ class PetReportFilterAPITests(APITestCase):
     """تست‌های اختصاصی فیلترینگ پیشرفته، جستجو و مرتب‌سازی"""
 
     def setUp(self):
+        cache.clear()
         self.user = User.objects.create_user(phone_number="09127777777", password="password123")
         self.url = reverse('pet-report-list')
         now = timezone.now()
@@ -399,3 +403,67 @@ class PetReportFilterAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         # آگهی تبریز مربوط به ۱۰ روز قبل است و نباید باشد، تهران (۲ روز پیش) و اصفهان (۱ روز پیش) باید باشند
         self.assertEqual(response.data['count'], 2)
+
+
+class PetReportCachingAPITests(APITestCase):
+    """تست‌های اختصاصی کشینگ و ابطال کش در Redis"""
+
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(phone_number="09121113355", password="password123")
+        self.url = reverse('pet-report-list')
+        self.report = PetReport.objects.create(
+            user=self.user,
+            title="گربه گمشده تستی",
+            pet_type="CAT",
+            report_type="LOST",
+            color="طوسی",
+            city="تهران",
+            event_date=timezone.now()
+        )
+
+    def test_cache_hit_and_miss_lifecycle(self):
+        """درخواست اول Cache Miss و درخواست دوم Cache Hit است"""
+        # درخواست اول: خواندن از دیتابیس و ذخیره در کش
+        res1 = self.client.get(self.url)
+        self.assertEqual(res1.status_code, status.HTTP_200_OK)
+        self.assertEqual(res1.headers.get('X-Cache'), 'MISS')
+
+        # درخواست دوم: بازگرداندن مستقیم از Redis
+        res2 = self.client.get(self.url)
+        self.assertEqual(res2.status_code, status.HTTP_200_OK)
+        self.assertEqual(res2.headers.get('X-Cache'), 'HIT')
+
+    def test_cache_invalidation_on_new_report(self):
+        """ثبت آگهی جدید باید کش قبلی را نامعتبر کند"""
+        # پر کردن کش
+        res1 = self.client.get(self.url)
+        self.assertEqual(res1.data['count'], 1)
+        self.assertEqual(res1.headers.get('X-Cache'), 'MISS')
+
+        # ایجاد آگهی جدید
+        self.client.force_authenticate(user=self.user)
+        payload = {
+            "title": "سگ ژرمن جدید",
+            "pet_type": "DOG",
+            "report_type": "FOUND",
+            "color": "مشکی و قهوه‌ای",
+            "city": "کرج",
+            "event_date": timezone.now().isoformat()
+        }
+        create_res = self.client.post(self.url, payload)
+        self.assertEqual(create_res.status_code, status.HTTP_201_CREATED)
+
+        # درخواست مجدد: باید کش پاک شده باشد (MISS) و تعداد به ۲ افزایش یابد
+        res2 = self.client.get(self.url)
+        self.assertEqual(res2.headers.get('X-Cache'), 'MISS')
+        self.assertEqual(res2.data['count'], 2)
+
+    def test_cache_key_order_independence(self):
+        """ترتیب پارامترهای ارسالی در کوئری نباید باعث تولید دو کلید کش مجزا شود"""
+        res1 = self.client.get(self.url, {'city': 'تهران', 'pet_type': 'CAT'})
+        self.assertEqual(res1.headers.get('X-Cache'), 'MISS')
+
+        # همان درخواست با جابجایی ترتیب کلیدها
+        res2 = self.client.get(self.url, {'pet_type': 'CAT', 'city': 'تهران'})
+        self.assertEqual(res2.headers.get('X-Cache'), 'HIT')

@@ -228,3 +228,14 @@ CELERY_TIMEZONE = 'Asia/Tehran'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv or os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False') == 'True'
+
+# Redis Caching Settings (DB 1 - Separated from Celery on DB 0)
+REDIS_CACHE_URL = os.getenv('REDIS_CACHE_URL', f'redis://{redis_host}:{redis_port}/1')
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': REDIS_CACHE_URL,
+        'TIMEOUT': int(os.getenv('CACHE_DEFAULT_TIMEOUT', 300)),  # پیش‌فرض ۵ دقیقه
+        'KEY_PREFIX': 'nana',
+    }
+}

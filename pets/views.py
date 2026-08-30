@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from rest_framework import viewsets, permissions, status, parsers
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -15,14 +16,20 @@ from .serializers import (
 from .permissions import IsOwnerOrReadOnly
 from .filters import PetReportFilter
 from .tasks import optimize_pet_image
+from .caching import (
+    get_normalized_cache_key,
+    invalidate_pet_reports_cache,
+    CACHE_TTL_PET_LIST
+)
 
 
 @extend_schema_view(
     list=extend_schema(
         tags=['Pets'],
-        summary='لیست و جستجوی پیشرفته آگهی‌های حیوانات',
+        summary='لیست و جستجوی پیشرفته آگهی‌های حیوانات (همراه با کش Redis)',
         description=(
             'دریافت لیست آگهی‌ها با پشتیبانی کامل از:\n'
+            '- **کش پرسرعت Redis**: پاسخ‌ها در Redis کش شده و در هدر پاسخ مقدار `X-Cache: HIT` یا `MISS` درج می‌شود.\n'
             '- **فیلترهای مشخصات**: نوع آگهی (LOST/FOUND)، نوع حیوان (DOG/CAT/...)، جنسیت، قلاده، شهر، محله، نژاد و رنگ.\n'
             '- **فیلترهای مژدگانی**: `min_reward`، `max_reward` و `has_reward` (true/false).\n'
             '- **فیلتر بازه زمانی**: `from_date` و `to_date` برای زمان رخداد حادثه.\n'
@@ -86,6 +93,38 @@ class PetReportViewSet(viewsets.ModelViewSet):
             return PetReportListSerializer
         return PetReportDetailSerializer
 
+    def list(self, request, *args, **kwargs):
+        """
+        لیست آگهی‌ها با کشینگ هوشمند Redis و تولید کلید نرمال‌شده بر اساس کوئری‌پارامترها
+        """
+        cache_key = get_normalized_cache_key("pet_reports_list", request.query_params)
+        cached_data = cache.get(cache_key)
+
+        if cached_data is not None:
+            response = Response(cached_data)
+            response['X-Cache'] = 'HIT'
+            return response
+
+        # در صورت نبود کش (Cache Miss)، اجرای کوئری در PostgreSQL
+        response = super().list(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            cache.set(cache_key, response.data, timeout=CACHE_TTL_PET_LIST)
+            response['X-Cache'] = 'MISS'
+
+        return response
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        invalidate_pet_reports_cache()
+
+    def perform_update(self, serializer):
+        serializer.save()
+        invalidate_pet_reports_cache()
+
+    def perform_destroy(self, instance):
+        instance.delete()
+        invalidate_pet_reports_cache()
+
     @extend_schema(
         tags=['Pets'],
         summary='آپلود تصویر برای یک آگهی',
@@ -105,6 +144,7 @@ class PetReportViewSet(viewsets.ModelViewSet):
         serializer = PetImageSerializer(data=request.data)
         if serializer.is_valid():
             image_instance = serializer.save(report=report)
+            invalidate_pet_reports_cache()
             # اجرای غیرهمگام تسک در پس‌زمینه با Celery بدون معطل کردن کاربر
             optimize_pet_image.delay(image_instance.id)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -147,6 +187,7 @@ class PetReportViewSet(viewsets.ModelViewSet):
         report = self.get_object()
         report.is_resolved = not report.is_resolved
         report.save(update_fields=['is_resolved', 'updated_at'])
+        invalidate_pet_reports_cache()
         serializer = PetReportDetailSerializer(report, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
