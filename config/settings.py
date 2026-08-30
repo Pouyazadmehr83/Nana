@@ -149,7 +149,6 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (Images, User uploads)
 MEDIA_URL = '/media/'
@@ -158,20 +157,22 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Static & Media Storage configuration (WhiteNoise & Cloudinary)
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
-CLOUDINARY_URL = os.getenv('CLOUDINARY_URL')
-CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
-CLOUDINARY_API_KEY = os.getenv('CLOUDINARY_API_KEY')
-CLOUDINARY_API_SECRET = os.getenv('CLOUDINARY_API_SECRET')
+CLOUDINARY_URL = (os.getenv('CLOUDINARY_URL') or '').strip().rstrip('.')
+CLOUDINARY_CLOUD_NAME = (os.getenv('CLOUDINARY_CLOUD_NAME') or '').strip()
+CLOUDINARY_API_KEY = (os.getenv('CLOUDINARY_API_KEY') or '').strip()
+CLOUDINARY_API_SECRET = (os.getenv('CLOUDINARY_API_SECRET') or '').strip().rstrip('.')
 
 has_cloudinary = bool(CLOUDINARY_URL or (CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET))
 
 if has_cloudinary:
-    if not CLOUDINARY_URL and CLOUDINARY_CLOUD_NAME:
-        CLOUDINARY_STORAGE = {
-            'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-            'API_KEY': CLOUDINARY_API_KEY,
-            'API_SECRET': CLOUDINARY_API_SECRET,
-        }
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+        'API_KEY': CLOUDINARY_API_KEY,
+        'API_SECRET': CLOUDINARY_API_SECRET,
+    }
+    if CLOUDINARY_URL:
+        CLOUDINARY_STORAGE['CLOUDINARY_URL'] = CLOUDINARY_URL
+
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     STORAGES = {
         "default": {
