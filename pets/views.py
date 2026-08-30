@@ -142,10 +142,12 @@ class PetReportViewSet(viewsets.ModelViewSet):
         report = self.get_object()
         serializer = PetImageSerializer(data=request.data)
         if serializer.is_valid():
-            image_instance = serializer.save(report=report)
-            # سیگنال post_save روی PetImage به صورت خودکار کش را invalidate می‌کند
-            # اجرای غیرهمگام تسک در پس‌زمینه با Celery بدون معطل کردن کاربر
-            optimize_pet_image.delay(image_instance.id)
+            is_first = not report.images.exists()
+            image_instance = serializer.save(report=report, is_main=is_first)
+            try:
+                optimize_pet_image.delay(image_instance.id)
+            except Exception:
+                pass
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

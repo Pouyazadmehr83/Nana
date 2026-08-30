@@ -140,7 +140,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Cloudinary Storage settings (used when credentials are provided)
+# Storage configuration for Django 5
 CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
 if CLOUDINARY_CLOUD_NAME:
     INSTALLED_APPS.insert(0, 'cloudinary_storage')
@@ -150,7 +150,23 @@ if CLOUDINARY_CLOUD_NAME:
         'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
         'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
     }
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -202,9 +202,12 @@ h3 { font-size: clamp(1.15rem, 2.5vw, 1.5rem); }
   box-shadow: 0 0 0 3px rgba(255,107,157,.15);
 }
 .form-control::placeholder { color: var(--gray-400); }
-.form-control:disabled { background: var(--gray-100); color: var(--gray-400); }
-
 select.form-control { cursor: pointer; }
+input[type="date"].form-control,
+input[type="time"].form-control {
+  direction: ltr;
+  text-align: right;
+}
 
 .form-error { font-size: 0.8rem; color: #ef4444; margin-top: 2px; }
 
