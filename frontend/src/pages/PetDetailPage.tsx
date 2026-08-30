@@ -9,6 +9,7 @@ import type { PetReportDetail } from '../types';
 import { PET_TYPE_LABELS, REPORT_TYPE_LABELS, GENDER_LABELS } from '../types';
 import SightingModal from '../components/SightingModal';
 import FoundModal    from '../components/FoundModal';
+import StoryBannerModal from '../components/StoryBannerModal';
 import './PetDetailPage.css';
 
 // Fix leaflet marker icons
@@ -38,6 +39,7 @@ export default function PetDetailPage() {
   const [resolving, setResolving] = useState(false);
   const [showSightingModal, setShowSightingModal] = useState(false);
   const [showFoundModal, setShowFoundModal] = useState(false);
+  const [showStoryModal, setShowStoryModal] = useState(false);
 
   const loadPet = async () => {
     try {
@@ -61,14 +63,31 @@ export default function PetDetailPage() {
 
   const handleShareTelegram = () => {
     if (!pet) return;
-    const text = encodeURIComponent(`📢 آگهی ${pet.title}\nشهر: ${pet.city}\nمشاهده در سامانه نانا:`);
+    const isLost = pet.report_type === 'LOST';
+    const text = encodeURIComponent(
+      `📢 ${isLost ? 'حیوان گمشده' : 'حیوان پیدا شده'}: ${pet.title}\n📍 شهر: ${pet.city}${pet.district ? `، ${pet.district}` : ''}\n${pet.reward ? `🎁 مژدگانی: ${pet.reward.toLocaleString('fa-IR')} تومان\n` : ''}مشاهده در سامانه نانا:`
+    );
     window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${text}`, '_blank');
   };
 
   const handleShareWhatsApp = () => {
     if (!pet) return;
-    const text = encodeURIComponent(`📢 آگهی ${pet.title}\nشهر: ${pet.city}\nمشاهده در سامانه نانا:\n${window.location.href}`);
+    const isLost = pet.report_type === 'LOST';
+    const text = encodeURIComponent(
+      `📢 *${isLost ? 'حیوان گمشده' : 'حیوان پیدا شده'}*\n📌 ${pet.title}\n📍 شهر: ${pet.city}${pet.district ? `، ${pet.district}` : ''}\n${pet.reward ? `🎁 مژدگانی: ${pet.reward.toLocaleString('fa-IR')} تومان\n` : ''}🔗 مشاهده آگهی:\n${window.location.href}`
+    );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
+  const handleShareTwitter = () => {
+    if (!pet) return;
+    const isLost = pet.report_type === 'LOST';
+    const text = encodeURIComponent(
+      `🚨 ${isLost ? 'حیوان گمشده' : 'حیوان پیدا شده'}: ${pet.title}\n📍 ${pet.city}${pet.district ? `، ${pet.district}` : ''}\n${pet.reward ? `🎁 مژدگانی: ${pet.reward.toLocaleString('fa-IR')} تومان\n` : ''}مشاهده در سامانه نانا:`
+    );
+    const url = encodeURIComponent(window.location.href);
+    const hashtags = 'حیوان_گمشده,نانا,سگ,گربه';
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}&hashtags=${hashtags}`, '_blank');
   };
 
   const handleToggleResolved = async () => {
@@ -280,23 +299,52 @@ export default function PetDetailPage() {
             )}
 
             {/* Social Sharing */}
-            <div className="detail-block share-block" style={{ background: 'var(--pink-50)', padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--pink-200)', marginTop: 20 }}>
-              <h3 className="detail-section-title" style={{ fontSize: '0.95rem', marginBottom: 12 }}>📢 اشتراک‌گذاری این آگهی</h3>
-              <p className="text-xs text-muted" style={{ marginBottom: 12 }}>با به اشتراک‌گذاری، شانس پیدا شدن این حیوان را افزایش دهید.</p>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="detail-block share-block" style={{ background: 'linear-gradient(135deg, #fff5f8 0%, #fff 100%)', padding: '20px 22px', borderRadius: 'var(--radius-xl)', border: '1.5px solid var(--pink-200)', marginTop: 22, boxShadow: '0 8px 24px rgba(255, 107, 157, 0.08)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: '1.4rem' }}>📢</span>
+                <div>
+                  <h3 className="detail-section-title" style={{ fontSize: '1.05rem', margin: 0, color: 'var(--gray-900)' }}>اشتراک‌گذاری و بازنشر آگهی</h3>
+                  <p className="text-xs text-muted" style={{ margin: 0 }}>هر بازنشر، شانس پیدا شدن این حیوان را چندین برابر می‌کند.</p>
+                </div>
+              </div>
+
+              {/* Instagram Story Action */}
+              <button
+                type="button"
+                className="btn btn-lg"
+                onClick={() => setShowStoryModal(true)}
+                style={{
+                  width: '100%',
+                  margin: '14px 0 10px',
+                  background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  boxShadow: '0 4px 16px rgba(220, 39, 67, 0.35)',
+                  justifyContent: 'center',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                📸 ساخت و دانلود بنر استوری اینستاگرام
+              </button>
+
+              {/* Social Channels Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8 }}>
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
-                  onClick={handleCopyLink}
-                  style={{ flex: 1, minWidth: 110, justifyContent: 'center' }}
+                  onClick={handleShareTwitter}
+                  style={{ justifyContent: 'center', borderColor: '#000000', color: '#000000', fontWeight: 600, background: '#f8fafc' }}
                 >
-                  {copied ? '✅ کپی شد!' : '📋 کپی لینک'}
+                  𝕏 توییتر / X
                 </button>
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
                   onClick={handleShareTelegram}
-                  style={{ flex: 1, minWidth: 100, justifyContent: 'center', borderColor: '#229ED9', color: '#229ED9' }}
+                  style={{ justifyContent: 'center', borderColor: '#229ED9', color: '#229ED9', fontWeight: 600, background: '#f0f9ff' }}
                 >
                   ✈️ تلگرام
                 </button>
@@ -304,9 +352,17 @@ export default function PetDetailPage() {
                   type="button"
                   className="btn btn-outline btn-sm"
                   onClick={handleShareWhatsApp}
-                  style={{ flex: 1, minWidth: 100, justifyContent: 'center', borderColor: '#25D366', color: '#25D366' }}
+                  style={{ justifyContent: 'center', borderColor: '#25D366', color: '#25D366', fontWeight: 600, background: '#f0fdf4' }}
                 >
                   💬 واتساپ
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={handleCopyLink}
+                  style={{ justifyContent: 'center', fontWeight: 600 }}
+                >
+                  {copied ? '✅ کپی شد!' : '📋 کپی لینک'}
                 </button>
               </div>
             </div>
@@ -399,6 +455,12 @@ export default function PetDetailPage() {
           contactPhone={pet.contact_phone}
           onClose={() => setShowFoundModal(false)}
           onSuccess={loadPet}
+        />
+      )}
+      {showStoryModal && (
+        <StoryBannerModal
+          pet={pet}
+          onClose={() => setShowStoryModal(false)}
         />
       )}
     </div>

@@ -1,0 +1,94 @@
+.story-modal-box {
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+  width: 92%;
+  max-width: 820px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.story-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.story-modal-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  margin-bottom: 2px;
+}
+
+.story-modal-sub {
+  font-size: 0.85rem;
+  color: var(--gray-500);
+}
+
+.story-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: center;
+}
+
+.story-preview-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--gray-900);
+  padding: 12px;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+.story-canvas {
+  width: 100%;
+  max-height: 480px;
+  aspect-ratio: 9 / 16;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.story-actions-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.story-tip-card {
+  display: flex;
+  gap: 12px;
+  background: var(--pink-50);
+  border: 1px solid var(--pink-200);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--gray-700);
+}
+
+.story-main-btn {
+  width: 100%;
+  justify-content: center;
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .story-modal-body {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .story-canvas {
+    max-height: 380px;
+  }
+}
