@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Link } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -24,16 +24,6 @@ const makeIcon = (lost: boolean) => L.divIcon({
 });
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
-
-function FitBounds({ markers }: { markers: [number, number][] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (markers.length === 0) return;
-    const bounds = L.latLngBounds(markers);
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
-  }, [markers, map]);
-  return null;
-}
 
 export default function MapPage() {
   const [pets, setPets] = useState<PetReportList[]>([]);
@@ -61,16 +51,8 @@ export default function MapPage() {
 
   const visible = pets.filter(p => {
     if (filter !== 'ALL' && p.report_type !== filter) return false;
-    return p; // will further filter by having coords in render
-  });
-
-  const withCoords = visible.filter(p => {
-    // We can't know coords from list serializer... show all markers
     return true;
   });
-
-  // For the map, we'll show Tehran center if no coords
-  const markers: [number, number][] = [];
 
   return (
     <div className="map-page page-enter">

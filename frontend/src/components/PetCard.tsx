@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { PetReportList } from '../types';
-import { REPORT_TYPE_LABELS, PET_TYPE_LABELS } from '../types';
+import { PET_TYPE_LABELS } from '../types';
 import './PetCard.css';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';

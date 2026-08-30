@@ -20,12 +20,14 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(
 
 # Application definition
 INSTALLED_APPS = [
+    'cloudinary_storage',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary',
 
     # Third-party apps
     'rest_framework',
@@ -40,6 +42,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -72,18 +75,28 @@ ASGI_APPLICATION = 'config.asgi.application'
 
 
 # Database
-# Using PostgreSQL configured via environment variables
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'nana_db'),
-        'USER': os.getenv('DB_USER', 'nana_user'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'nana_password'),
-        'HOST': os.getenv('DB_HOST', 'db'),
-        'PORT': os.getenv('DB_PORT', '5432'),
-        'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', 60)),
+# Using PostgreSQL configured via DATABASE_URL or individual environment variables
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('DB_NAME', 'nana_db'),
+            'USER': os.getenv('DB_USER', 'nana_user'),
+            'PASSWORD': os.getenv('DB_PASSWORD', 'nana_password'),
+            'HOST': os.getenv('DB_HOST', 'db'),
+            'PORT': os.getenv('DB_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', 60)),
+        }
+    }
 
 
 # Password validation
@@ -113,9 +126,21 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Media files (Images, User uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Cloudinary Storage settings (used when credentials are provided)
+CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
+if CLOUDINARY_CLOUD_NAME:
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
+        'API_KEY': os.getenv('CLOUDINARY_API_KEY', ''),
+        'API_SECRET': os.getenv('CLOUDINARY_API_SECRET', ''),
+    }
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -217,25 +242,50 @@ LOGGING = {
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 # Celery & Redis Broker Settings
-redis_host = os.getenv('REDIS_HOST', 'redis')
+redis_host = os.getenv('REDIS_HOST', '')
 redis_port = os.getenv('REDIS_PORT', '6379')
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{redis_host}:{redis_port}/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', f'redis://{redis_host}:{redis_port}/0')
+redis_cache_url_env = os.getenv('REDIS_CACHE_URL')
+
+if redis_cache_url_env:
+    REDIS_CACHE_URL = redis_cache_url_env
+elif redis_host:
+    REDIS_CACHE_URL = f'redis://{redis_host}:{redis_port}/1'
+else:
+    REDIS_CACHE_URL = None
+
+if redis_host:
+    CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{redis_host}:{redis_port}/0')
+    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', f'redis://{redis_host}:{redis_port}/0')
+else:
+    CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'memory://')
+    CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'cache+memory://')
+    CELERY_TASK_ALWAYS_EAGER = True
+
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Tehran'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
-CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv or os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False') == 'True'
+if 'CELERY_TASK_ALWAYS_EAGER' not in locals():
+    CELERY_TASK_ALWAYS_EAGER = 'test' in sys.argv or os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False') == 'True'
 
-# Redis Caching Settings (DB 1 - Separated from Celery on DB 0)
-REDIS_CACHE_URL = os.getenv('REDIS_CACHE_URL', f'redis://{redis_host}:{redis_port}/1')
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': REDIS_CACHE_URL,
-        'TIMEOUT': int(os.getenv('CACHE_DEFAULT_TIMEOUT', 300)),  # پیش‌فرض ۵ دقیقه
-        'KEY_PREFIX': 'nana',
+# Caching Settings
+if REDIS_CACHE_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_CACHE_URL,
+            'TIMEOUT': int(os.getenv('CACHE_DEFAULT_TIMEOUT', 300)),
+            'KEY_PREFIX': 'nana',
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'nana-local-memory-cache',
+            'TIMEOUT': int(os.getenv('CACHE_DEFAULT_TIMEOUT', 300)),
+            'KEY_PREFIX': 'nana',
+        }
+    }
