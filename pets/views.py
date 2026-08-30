@@ -92,6 +92,31 @@ class PetReportViewSet(viewsets.ModelViewSet):
             return PetReportListSerializer
         return PetReportDetailSerializer
 
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        lookup_val = self.kwargs.get(lookup_url_kwarg, self.kwargs.get('pk'))
+
+        obj = None
+        # تلاش برای بازیابی با UUID
+        try:
+            import uuid
+            uuid.UUID(str(lookup_val))
+            obj = queryset.filter(uuid=lookup_val).first()
+        except (ValueError, TypeError, AttributeError):
+            pass
+
+        # تلاش برای بازیابی با کلید اصلی عددی
+        if obj is None and str(lookup_val).isdigit():
+            obj = queryset.filter(pk=int(lookup_val)).first()
+
+        if obj is None:
+            from django.http import Http404
+            raise Http404("آگهی مورد نظر یافت نشد.")
+
+        self.check_object_permissions(self.request, obj)
+        return obj
+
     def list(self, request, *args, **kwargs):
         """
         لیست آگهی‌ها با کشینگ هوشمند Redis و تولید کلید نرمال‌شده بر اساس کوئری‌پارامترها

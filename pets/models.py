@@ -7,10 +7,11 @@ from .validators import validate_image_file
 
 
 class PetReport(models.Model):
-    id = models.UUIDField(
-        primary_key=True,
+    uuid = models.UUIDField(
         default=uuid.uuid4,
         editable=False,
+        unique=True,
+        db_index=True,
         verbose_name="شناسه یکتا"
     )
 

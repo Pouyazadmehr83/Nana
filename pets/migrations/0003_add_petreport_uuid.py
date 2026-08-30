@@ -9,14 +9,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.AddField(
             model_name='petreport',
-            name='id',
+            name='uuid',
             field=models.UUIDField(
+                db_index=True,
                 default=uuid.uuid4,
                 editable=False,
-                primary_key=True,
-                serialize=False,
+                unique=True,
                 verbose_name='شناسه یکتا'
             ),
         ),

@@ -1,3 +1,4 @@
+import uuid
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 from drf_spectacular.types import OpenApiTypes
@@ -23,8 +24,24 @@ class PetImageSerializer(serializers.ModelSerializer):
         return file
 
 
+class PetReportRelatedField(serializers.RelatedField):
+    def to_internal_value(self, data):
+        try:
+            uuid.UUID(str(data))
+            return PetReport.objects.get(uuid=data)
+        except (ValueError, TypeError, PetReport.DoesNotExist):
+            try:
+                return PetReport.objects.get(pk=int(data))
+            except (ValueError, PetReport.DoesNotExist):
+                raise serializers.ValidationError("آگهی مورد نظر یافت نشد.")
+
+    def to_representation(self, value):
+        return str(value.uuid)
+
+
 class SightingSerializer(serializers.ModelSerializer):
     user_phone = serializers.ReadOnlyField(source='user.phone_number')
+    report = PetReportRelatedField(queryset=PetReport.objects.all(), required=False)
 
     class Meta:
         model = Sighting
@@ -52,6 +69,7 @@ class SightingSerializer(serializers.ModelSerializer):
 
 
 class PetReportListSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(source='uuid', read_only=True)
     main_image = serializers.SerializerMethodField()
 
     class Meta:
@@ -75,6 +93,7 @@ class PetReportListSerializer(serializers.ModelSerializer):
 
 
 class PetReportDetailSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(source='uuid', read_only=True)
     images = PetImageSerializer(many=True, read_only=True)
     sightings = SightingSerializer(many=True, read_only=True)
     user_phone = serializers.ReadOnlyField(source='user.phone_number')
