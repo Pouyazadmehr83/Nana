@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import { Link } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -25,10 +25,41 @@ const makeIcon = (lost: boolean) => L.divIcon({
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 
+function MapController({ center }: { center: [number, number] | null }) {
+  const map = useMapEvents({});
+  useEffect(() => {
+    if (center) {
+      map.flyTo(center, 14, { animate: true });
+    }
+  }, [center, map]);
+  return null;
+}
+
 export default function MapPage() {
   const [pets, setPets] = useState<PetReportList[]>([]);
   const [loading, setLoading] = useState(true);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [userCenter, setUserCenter] = useState<[number, number] | null>(null);
   const [filter, setFilter] = useState<'ALL' | 'LOST' | 'FOUND'>('ALL');
+
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      alert('مرورگر شما از قابلیت دریافت موقعیت مکانی پشتیبانی نمی‌کند.');
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setUserCenter([pos.coords.latitude, pos.coords.longitude]);
+        setGeoLoading(false);
+      },
+      () => {
+        setGeoLoading(false);
+        alert('امکان دریافت موقعیت وجود ندارد. لطفاً دسترسی لوکیشن را بررسی کنید.');
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -69,6 +100,14 @@ export default function MapPage() {
                 {f === 'ALL' ? '📋 همه' : f === 'LOST' ? '🔴 گمشده' : '🟢 پیدا شده'}
               </button>
             ))}
+            <button
+              className="chip chip-locate"
+              onClick={handleLocateMe}
+              disabled={geoLoading}
+              style={{ background: 'var(--white)', border: '1.5px solid var(--rose)', color: 'var(--rose)', fontWeight: 600 }}
+            >
+              {geoLoading ? '⏳ دریافت موقعیت...' : '📍 موقعیت من'}
+            </button>
           </div>
         </div>
       </div>
@@ -80,6 +119,7 @@ export default function MapPage() {
           </div>
         ) : (
           <MapContainer center={[35.7, 51.4]} zoom={11} className="full-map">
+            <MapController center={userCenter} />
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

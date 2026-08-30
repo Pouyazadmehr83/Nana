@@ -16,15 +16,20 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-function LocationPicker({ initial, onSelect }: { initial: [number, number] | null; onSelect: (lat: number, lng: number) => void }) {
-  const [pos, setPos] = useState<[number, number] | null>(initial);
-  useMapEvents({
+function LocationPicker({ pos, onSelect }: { pos: [number, number] | null; onSelect: (lat: number, lng: number) => void }) {
+  const map = useMapEvents({
     click(e) {
-      const p: [number, number] = [e.latlng.lat, e.latlng.lng];
-      setPos(p);
-      onSelect(p[0], p[1]);
+      const { lat, lng } = e.latlng;
+      onSelect(Number(lat.toFixed(6)), Number(lng.toFixed(6)));
     },
   });
+
+  useEffect(() => {
+    if (pos) {
+      map.flyTo(pos, 14, { animate: true });
+    }
+  }, [pos, map]);
+
   return pos ? <Marker position={pos} /> : null;
 }
 
@@ -35,12 +40,45 @@ export default function EditPetPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [newImages, setNewImages] = useState<File[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('مرورگر شما از دریافت موقعیت مکانی پشتیبانی نمی‌کند.');
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const userLat = Number(pos.coords.latitude.toFixed(6));
+        const userLng = Number(pos.coords.longitude.toFixed(6));
+        setLat(userLat);
+        setLng(userLng);
+        setGeoLoading(false);
+      },
+      () => {
+        setGeoLoading(false);
+        alert('امکان دریافت موقعیت وجود ندارد. دسترسی لوکیشن را بررسی کنید.');
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    setNewImages(prev => [...prev, ...files]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setNewImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const [form, setForm] = useState({
     report_type: 'LOST', pet_type: 'DOG', title: '', name: '', breed: '',
@@ -262,14 +300,25 @@ export default function EditPetPage() {
             </div>
 
             <div className="map-picker-wrap">
-              <p className="form-label" style={{ marginBottom: 8 }}>
-                🗺️ موقعیت روی نقشه (برای تغییر کلیک کنید)
-                {lat && <span className="text-xs text-muted" style={{ marginRight: 8 }}>✅ {lat.toFixed(4)}, {lng?.toFixed(4)}</span>}
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                <p className="form-label" style={{ margin: 0 }}>
+                  🗺️ موقعیت روی نقشه (برای تغییر کلیک کنید)
+                  {lat && <span className="text-xs text-muted" style={{ marginRight: 8 }}>✅ {lat.toFixed(4)}, {lng?.toFixed(4)}</span>}
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={handleGetCurrentLocation}
+                  disabled={geoLoading}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  {geoLoading ? <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> : '📍 موقعیت فعلی من'}
+                </button>
+              </div>
               <MapContainer center={mapCenter} zoom={mapZoom} className="map-picker">
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <LocationPicker
-                  initial={lat && lng ? [lat, lng] : null}
+                  pos={lat && lng ? [lat, lng] : null}
                   onSelect={handleMapSelect}
                 />
               </MapContainer>
@@ -297,16 +346,27 @@ export default function EditPetPage() {
             <div className="upload-zone" onClick={() => fileRef.current?.click()}>
               <span style={{ fontSize: '2rem' }}>📷</span>
               <p>برای انتخاب تصویر جدید کلیک کنید</p>
-              <p className="text-xs text-muted">تصاویر قبلی حذف نمی‌شوند</p>
+              <p className="text-xs text-muted">حداکثر ۵ مگابایت — JPG, PNG, WEBP</p>
               <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.webp" multiple style={{ display: 'none' }}
-                onChange={e => setNewImages(Array.from(e.target.files || []))} />
+                onChange={handleFileChange} />
             </div>
             {newImages.length > 0 && (
-              <div className="upload-preview">
+              <div className="upload-preview" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 16 }}>
                 {newImages.map((f, i) => (
-                  <div key={i} className="upload-thumb">
-                    <img src={URL.createObjectURL(f)} alt="" />
-                    <span className="text-xs">{f.name}</span>
+                  <div key={i} className="upload-thumb" style={{ position: 'relative', width: 100, height: 100, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--gray-200)' }}>
+                    <img src={URL.createObjectURL(f)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleRemoveImage(i); }}
+                      style={{
+                        position: 'absolute', top: 4, right: 4, background: 'rgba(239,68,68,0.85)',
+                        color: '#fff', border: 'none', borderRadius: '50%', width: 22, height: 22,
+                        fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}
+                      title="حذف تصویر"
+                    >
+                      ✕
+                    </button>
                   </div>
                 ))}
               </div>

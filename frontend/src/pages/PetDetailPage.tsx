@@ -32,6 +32,8 @@ export default function PetDetailPage() {
   const { user, isAuthenticated } = useAuth();
   const [pet, setPet] = useState<PetReportDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [resolving, setResolving] = useState(false);
   const [showSightingModal, setShowSightingModal] = useState(false);
@@ -41,14 +43,33 @@ export default function PetDetailPage() {
     try {
       const { data } = await petsApi.detail(Number(id));
       setPet(data);
+      setError(null);
     } catch {
-      navigate('/');
+      setError('آگهی مورد نظر یافت نشد یا ممکن است توسط ثبت‌کننده حذف شده باشد.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => { loadPet(); }, [id]);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleShareTelegram = () => {
+    if (!pet) return;
+    const text = encodeURIComponent(`📢 آگهی ${pet.title}\nشهر: ${pet.city}\nمشاهده در سامانه نانا:`);
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${text}`, '_blank');
+  };
+
+  const handleShareWhatsApp = () => {
+    if (!pet) return;
+    const text = encodeURIComponent(`📢 آگهی ${pet.title}\nشهر: ${pet.city}\nمشاهده در سامانه نانا:\n${window.location.href}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
 
   const handleToggleResolved = async () => {
     if (!pet) return;
@@ -76,7 +97,23 @@ export default function PetDetailPage() {
       <div className="spinner" style={{ width: 48, height: 48 }} />
     </div>
   );
-  if (!pet) return null;
+
+  if (error || !pet) {
+    return (
+      <div className="container" style={{ padding: '80px 16px', textAlign: 'center' }}>
+        <div className="card-floating" style={{ maxWidth: 480, margin: '0 auto', padding: '40px 24px' }}>
+          <span style={{ fontSize: '4rem', display: 'block', marginBottom: 16 }}>🔍🐾</span>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: 12 }}>آگهی پیدا نشد</h2>
+          <p style={{ color: 'var(--gray-600)', marginBottom: 24, fontSize: '0.95rem', lineHeight: 1.6 }}>
+            {error || 'آگهی مورد نظر در دسترس نیست یا پاک شده است.'}
+          </p>
+          <Link to="/" className="btn btn-primary btn-lg" style={{ display: 'inline-flex' }}>
+            🏠 بازگشت به صفحه اصلی
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const isOwner = isAuthenticated && user && user.id === pet.user;
   const lat = pet.latitude ? parseFloat(pet.latitude) : null;
@@ -241,6 +278,38 @@ export default function PetDetailPage() {
                 <p className="detail-text">{pet.address_description}</p>
               </div>
             )}
+
+            {/* Social Sharing */}
+            <div className="detail-block share-block" style={{ background: 'var(--pink-50)', padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--pink-200)', marginTop: 20 }}>
+              <h3 className="detail-section-title" style={{ fontSize: '0.95rem', marginBottom: 12 }}>📢 اشتراک‌گذاری این آگهی</h3>
+              <p className="text-xs text-muted" style={{ marginBottom: 12 }}>با به اشتراک‌گذاری، شانس پیدا شدن این حیوان را افزایش دهید.</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={handleCopyLink}
+                  style={{ flex: 1, minWidth: 110, justifyContent: 'center' }}
+                >
+                  {copied ? '✅ کپی شد!' : '📋 کپی لینک'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={handleShareTelegram}
+                  style={{ flex: 1, minWidth: 100, justifyContent: 'center', borderColor: '#229ED9', color: '#229ED9' }}
+                >
+                  ✈️ تلگرام
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={handleShareWhatsApp}
+                  style={{ flex: 1, minWidth: 100, justifyContent: 'center', borderColor: '#25D366', color: '#25D366' }}
+                >
+                  💬 واتساپ
+                </button>
+              </div>
+            </div>
 
             {/* Owner actions */}
             {isOwner && (

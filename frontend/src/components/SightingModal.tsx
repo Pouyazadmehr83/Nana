@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -12,14 +12,19 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-function LocationPicker({ onSelect }: { onSelect: (lat: number, lng: number) => void }) {
-  const [pos, setPos] = useState<[number, number] | null>(null);
-  useMapEvents({
+function LocationPicker({ pos, onSelect }: { pos: [number, number] | null; onSelect: (lat: number, lng: number) => void }) {
+  const map = useMapEvents({
     click(e) {
-      setPos([e.latlng.lat, e.latlng.lng]);
-      onSelect(e.latlng.lat, e.latlng.lng);
+      onSelect(Number(e.latlng.lat.toFixed(6)), Number(e.latlng.lng.toFixed(6)));
     },
   });
+
+  useEffect(() => {
+    if (pos) {
+      map.flyTo(pos, 14, { animate: true });
+    }
+  }, [pos, map]);
+
   return pos ? <Marker position={pos} /> : null;
 }
 
@@ -40,7 +45,30 @@ export default function SightingModal({ reportId, reportTitle, centerLat, center
   const [lng, setLng] = useState<number | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert('مرورگر شما از دریافت موقعیت مکانی پشتیبانی نمی‌کند.');
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const userLat = Number(pos.coords.latitude.toFixed(6));
+        const userLng = Number(pos.coords.longitude.toFixed(6));
+        setLat(userLat);
+        setLng(userLng);
+        setGeoLoading(false);
+      },
+      () => {
+        setGeoLoading(false);
+        alert('امکان دریافت موقعیت وجود ندارد. لطفاً دسترسی لوکیشن را بررسی کنید.');
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
 
   const handleMapSelect = useCallback((la: number, lo: number) => {
     setLat(la); setLng(lo);
@@ -126,18 +154,29 @@ export default function SightingModal({ reportId, reportTitle, centerLat, center
 
           {/* Map */}
           <div className="form-group">
-            <label className="form-label">
-              🗺️ موقعیت روی نقشه (کلیک کنید)
-              {lat && (
-                <span className="text-xs text-muted" style={{ marginRight: 8, fontWeight: 400 }}>
-                  ✅ مختصات ثبت شد
-                </span>
-              )}
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, flexWrap: 'wrap', gap: 6 }}>
+              <label className="form-label" style={{ margin: 0 }}>
+                🗺️ موقعیت روی نقشه (کلیک کنید)
+                {lat && (
+                  <span className="text-xs text-muted" style={{ marginRight: 8, fontWeight: 400 }}>
+                    ✅ {lat.toFixed(4)}, {lng?.toFixed(4)}
+                  </span>
+                )}
+              </label>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={handleGetCurrentLocation}
+                disabled={geoLoading}
+                style={{ padding: '4px 10px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                {geoLoading ? <span className="spinner" style={{ width: 12, height: 12, borderWidth: 2 }} /> : '📍 موقعیت من'}
+              </button>
+            </div>
             <div className="modal-map-wrap">
               <MapContainer center={mapCenter} zoom={13} className="modal-map">
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <LocationPicker onSelect={handleMapSelect} />
+                <LocationPicker pos={lat && lng ? [lat, lng] : null} onSelect={handleMapSelect} />
               </MapContainer>
             </div>
           </div>

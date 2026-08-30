@@ -26,6 +26,7 @@ export default function HomePage() {
   const [search, setSearch] = useState('');
   const [reportType, setReportType] = useState<ReportType | ''>('');
   const [petType, setPetType] = useState<PetType | ''>('');
+  const [hasReward, setHasReward] = useState<boolean | null>(null);
   const [city, setCity] = useState('');
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -36,13 +37,14 @@ export default function HomePage() {
     setError('');
     const currentPage = reset ? 1 : page;
     try {
-      const params: Record<string, string | number> = { page: currentPage };
-      if (search)     params.search     = search;
-      if (reportType) params.report_type = reportType;
-      if (petType)    params.pet_type    = petType;
-      if (city)       params.city        = city;
+      const params: Record<string, string | number | boolean> = { page: currentPage };
+      if (search)              params.search     = search;
+      if (reportType)          params.report_type = reportType;
+      if (petType)             params.pet_type    = petType;
+      if (city)                params.city        = city;
+      if (hasReward !== null)  params.has_reward  = hasReward;
 
-      const { data } = await petsApi.list(params);
+      const { data } = await petsApi.list(params as any);
       const paged = data as PaginatedResponse<PetReportList>;
 
       if (reset || currentPage === 1) {
@@ -57,14 +59,14 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [search, reportType, petType, city, page]);
+  }, [search, reportType, petType, city, hasReward, page]);
 
   // Reset to page 1 whenever filters change
   useEffect(() => {
     setPage(1);
     fetchPets(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, reportType, petType, city]);
+  }, [search, reportType, petType, city, hasReward]);
 
   useEffect(() => {
     if (page > 1) fetchPets(false);
@@ -160,6 +162,13 @@ export default function HomePage() {
                   {pt.label}
                 </button>
               ))}
+              <button
+                className={`chip ${hasReward === true ? 'active' : ''}`}
+                onClick={() => setHasReward(prev => (prev === true ? null : true))}
+                style={{ borderColor: 'var(--rose)' }}
+              >
+                💰 دارای مژدگانی
+              </button>
             </div>
           </div>
 
