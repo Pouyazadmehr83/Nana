@@ -23,6 +23,12 @@ DEBUG = os.getenv('DEBUG', 'True') == 'True'
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(',') if host.strip()]
 
 
+try:
+    import cloudinary_storage
+    has_cloudinary_pkg = True
+except ImportError:
+    has_cloudinary_pkg = False
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -30,10 +36,17 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage',
-    'django.contrib.staticfiles',
-    'cloudinary',
+]
 
+if has_cloudinary_pkg:
+    INSTALLED_APPS.append('cloudinary_storage')
+
+INSTALLED_APPS.append('django.contrib.staticfiles')
+
+if has_cloudinary_pkg:
+    INSTALLED_APPS.append('cloudinary')
+
+INSTALLED_APPS += [
     # Third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
@@ -143,8 +156,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Static & Media Storage configuration (WhiteNoise & Cloudinary)
-WHITENOISE_MANIFEST_STRICT = False
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 CLOUDINARY_URL = os.getenv('CLOUDINARY_URL')
 CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME')
@@ -166,7 +178,7 @@ if has_cloudinary:
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },
     }
 else:
@@ -176,7 +188,7 @@ else:
             "BACKEND": "django.core.files.storage.FileSystemStorage",
         },
         "staticfiles": {
-            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },
     }
 
