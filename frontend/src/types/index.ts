@@ -43,6 +43,8 @@ export interface PetReportList {
   event_date: string;
   reward: number;
   is_resolved: boolean;
+  latitude: string | null;
+  longitude: string | null;
   main_image: string | null;
   created_at: string;
 }

@@ -68,6 +68,17 @@ class SightingSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+def normalize_fa_ar_digits(val):
+    if not val:
+        return val
+    fa_digits = '۰۱۲۳۴۵۶۷۸۹'
+    ar_digits = '٠١٢٣٤٥٦٧٨٩'
+    en_digits = '0123456789'
+    trans_fa = str.maketrans(fa_digits, en_digits)
+    trans_ar = str.maketrans(ar_digits, en_digits)
+    return str(val).translate(trans_fa).translate(trans_ar).strip()
+
+
 class PetReportListSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source='uuid', read_only=True)
     main_image = serializers.SerializerMethodField()
@@ -77,7 +88,7 @@ class PetReportListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'report_type', 'pet_type', 'city',
             'district', 'event_date', 'reward', 'is_resolved',
-            'main_image', 'created_at'
+            'latitude', 'longitude', 'main_image', 'created_at'
         ]
 
     @extend_schema_field(OpenApiTypes.URI)
@@ -109,6 +120,11 @@ class PetReportDetailSerializer(serializers.ModelSerializer):
             'is_resolved', 'images', 'sightings', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+
+    def validate_contact_phone(self, value):
+        if value:
+            return normalize_fa_ar_digits(value)
+        return value
 
     def validate_latitude(self, value):
         if value is not None:

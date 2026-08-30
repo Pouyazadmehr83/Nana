@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { normalizeDigits } from '../utils/normalizeDigits';
 import './AuthPages.css';
 
 export default function LoginPage() {
@@ -16,7 +17,8 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await login(phone, password);
+      const normalizedPhone = normalizeDigits(phone);
+      await login(normalizedPhone, password);
       navigate('/');
     } catch (err: any) {
       const detail = err.response?.data?.detail || err.response?.data;

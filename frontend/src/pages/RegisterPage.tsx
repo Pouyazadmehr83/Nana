@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { normalizeDigits } from '../utils/normalizeDigits';
 import './AuthPages.css';
 
 export default function RegisterPage() {
@@ -19,7 +20,11 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm(prev => ({
+      ...prev,
+      [name]: name === 'phone_number' ? normalizeDigits(value) : value,
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,9 +36,13 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     try {
-      await authApi.register(form);
+      const normalizedForm = {
+        ...form,
+        phone_number: normalizeDigits(form.phone_number),
+      };
+      await authApi.register(normalizedForm);
       // Auto-login after register
-      const { data } = await authApi.login(form.phone_number, form.password);
+      const { data } = await authApi.login(normalizedForm.phone_number, form.password);
       localStorage.setItem('access_token', data.access);
       localStorage.setItem('refresh_token', data.refresh);
       await refreshUser();

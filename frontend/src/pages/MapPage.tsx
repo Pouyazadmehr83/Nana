@@ -125,12 +125,18 @@ export default function MapPage() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             />
             {visible.map(pet => {
-              // Deterministic spread for list view mock coords if exact not present
-              const hash = String(pet.id).split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+              const petLat = pet.latitude ? parseFloat(pet.latitude) : null;
+              const petLng = pet.longitude ? parseFloat(pet.longitude) : null;
+              const hasExactCoords = petLat !== null && petLng !== null && !isNaN(petLat) && !isNaN(petLng);
+              
+              const pos: [number, number] = hasExactCoords
+                ? [petLat, petLng]
+                : [35.6892, 51.3890];
+
               return (
                 <Marker
                   key={pet.id}
-                  position={[35.7 + (hash % 20) * 0.01, 51.4 + (hash % 15) * 0.01]}
+                  position={pos}
                   icon={makeIcon(pet.report_type === 'LOST')}
                 >
                   <Popup>

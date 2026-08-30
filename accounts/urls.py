@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import (
 )
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from .views import RegisterView, UserProfileView
+from .serializers import CustomTokenObtainPairSerializer
 
 
 @extend_schema_view(
@@ -16,6 +17,7 @@ from .views import RegisterView, UserProfileView
     )
 )
 class ThrottledTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
     throttle_scope = 'auth'
 
 

@@ -4,6 +4,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { petsApi } from '../services/api';
+import { normalizeDigits } from '../utils/normalizeDigits';
 import './CreatePetPage.css';
 
 // Fix leaflet icons
@@ -122,7 +123,11 @@ export default function CreatePetPage() {
 
       Object.entries(form).forEach(([k, v]) => {
         if (k !== 'event_date' && k !== 'event_time') {
-          fd.append(k, String(v));
+          if (k === 'contact_phone' || k === 'reward' || k === 'age') {
+            fd.append(k, normalizeDigits(String(v)));
+          } else {
+            fd.append(k, String(v));
+          }
         }
       });
       fd.append('event_date', isoDateTime);
