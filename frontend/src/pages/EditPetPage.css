@@ -1,0 +1,16 @@
+.edit-breadcrumb {
+  margin-bottom: 20px;
+}
+.edit-breadcrumb a {
+  color: var(--rose);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.edit-breadcrumb a:hover { text-decoration: underline; }
+
+.edit-form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}

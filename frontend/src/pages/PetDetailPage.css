@@ -1,5 +1,89 @@
 .pet-detail-page { padding: 32px 0 80px; }
 
+/* ── Community action bar ── */
+.community-actions {
+  background: linear-gradient(135deg, var(--pink-50), var(--white));
+  border: 1.5px solid var(--pink-200);
+  border-radius: var(--radius-xl);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.community-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.community-icon { font-size: 2rem; }
+.community-title { font-weight: 700; color: var(--gray-800); margin-bottom: 2px; }
+.community-sub   { font-size: 0.82rem; color: var(--gray-500); }
+.community-btns  { display: flex; gap: 10px; flex-wrap: wrap; }
+.community-btn   { white-space: nowrap; }
+.community-found {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  box-shadow: 0 4px 16px rgba(22,163,74,.4) !important;
+}
+.community-found:hover { box-shadow: 0 8px 24px rgba(22,163,74,.5) !important; }
+
+/* Resolved banner */
+.resolved-banner {
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+  color: #15803d;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+/* Sightings count badge */
+.sightings-count-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--pink-50);
+  border: 1px solid var(--pink-200);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--rose-deep);
+}
+
+/* Phone link in info grid */
+.info-row-phone { cursor: pointer; }
+.info-phone-link {
+  color: var(--rose) !important;
+  font-weight: 700 !important;
+  text-decoration: none;
+  direction: ltr;
+  display: inline-block;
+}
+.info-phone-link:hover { text-decoration: underline; }
+
+/* Empty sightings CTA */
+.sightings-empty-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 28px;
+  background: var(--white);
+  border-radius: var(--radius-xl);
+  border: 1.5px dashed var(--pink-300);
+  color: var(--gray-500);
+  font-size: 0.9rem;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
 .breadcrumb {
   display: flex;
   align-items: center;

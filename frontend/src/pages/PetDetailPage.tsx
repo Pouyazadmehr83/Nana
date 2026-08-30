@@ -7,6 +7,8 @@ import { petsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import type { PetReportDetail } from '../types';
 import { PET_TYPE_LABELS, REPORT_TYPE_LABELS, GENDER_LABELS } from '../types';
+import SightingModal from '../components/SightingModal';
+import FoundModal    from '../components/FoundModal';
 import './PetDetailPage.css';
 
 // Fix leaflet marker icons
@@ -32,20 +34,21 @@ export default function PetDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
   const [resolving, setResolving] = useState(false);
+  const [showSightingModal, setShowSightingModal] = useState(false);
+  const [showFoundModal, setShowFoundModal] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const { data } = await petsApi.detail(Number(id));
-        setPet(data);
-      } catch {
-        navigate('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [id, navigate]);
+  const loadPet = async () => {
+    try {
+      const { data } = await petsApi.detail(Number(id));
+      setPet(data);
+    } catch {
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadPet(); }, [id]);
 
   const handleToggleResolved = async () => {
     if (!pet) return;
@@ -73,17 +76,14 @@ export default function PetDetailPage() {
       <div className="spinner" style={{ width: 48, height: 48 }} />
     </div>
   );
-
   if (!pet) return null;
 
   const isOwner = isAuthenticated && user && user.id === pet.user;
   const lat = pet.latitude ? parseFloat(pet.latitude) : null;
   const lng = pet.longitude ? parseFloat(pet.longitude) : null;
   const hasMap = lat !== null && lng !== null;
-
-  const images = pet.images.length > 0
-    ? pet.images
-    : [];
+  const canReportFound = isAuthenticated && !isOwner && pet.report_type === 'LOST' && !pet.is_resolved;
+  const canReportSighting = isAuthenticated && !isOwner && !pet.is_resolved;
 
   return (
     <div className="pet-detail-page page-enter">
@@ -95,15 +95,53 @@ export default function PetDetailPage() {
           <span>{pet.title}</span>
         </div>
 
+        {/* ── Community Action Buttons (for non-owners) ── */}
+        {isAuthenticated && !isOwner && !pet.is_resolved && (
+          <div className="community-actions">
+            <div className="community-banner">
+              <span className="community-icon">🤝</span>
+              <div>
+                <p className="community-title">آیا این حیوان را دیده‌اید؟</p>
+                <p className="community-sub">گزارش دهید تا صاحبش سریع‌تر پیدا شود</p>
+              </div>
+            </div>
+            <div className="community-btns">
+              {canReportSighting && (
+                <button
+                  className="btn btn-outline community-btn"
+                  onClick={() => setShowSightingModal(true)}
+                >
+                  👁️ این حیوان رو دیدم
+                </button>
+              )}
+              {canReportFound && (
+                <button
+                  className="btn btn-primary community-btn community-found"
+                  onClick={() => setShowFoundModal(true)}
+                >
+                  🎉 پیداش کردم!
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Resolved banner */}
+        {pet.is_resolved && (
+          <div className="resolved-banner">
+            ✅ این حیوان پیدا شده / پرونده مختومه است
+          </div>
+        )}
+
         <div className="pet-detail-layout">
           {/* Left: Images + Map */}
           <div className="pet-detail-media">
             {/* Image Gallery */}
             <div className="gallery">
               <div className="gallery-main">
-                {images.length > 0 ? (
+                {pet.images.length > 0 ? (
                   <img
-                    src={absUrl(images[activeImg]?.image) || ''}
+                    src={absUrl(pet.images[activeImg]?.image) || ''}
                     alt={pet.title}
                     className="gallery-main-img"
                   />
@@ -116,9 +154,9 @@ export default function PetDetailPage() {
                   </div>
                 )}
               </div>
-              {images.length > 1 && (
+              {pet.images.length > 1 && (
                 <div className="gallery-thumbs">
-                  {images.map((img, i) => (
+                  {pet.images.map((img, i) => (
                     <img
                       key={img.id}
                       src={absUrl(img.image) || ''}
@@ -148,18 +186,25 @@ export default function PetDetailPage() {
 
           {/* Right: Info */}
           <div className="pet-detail-info">
-            {/* Header */}
             <div className="detail-header">
               <div className="flex gap-2 items-center" style={{ flexWrap: 'wrap' }}>
                 <span className={`badge ${pet.report_type === 'LOST' ? 'badge-lost' : 'badge-found'}`}>
                   {pet.report_type === 'LOST' ? '🔴' : '🟢'} {REPORT_TYPE_LABELS[pet.report_type]}
                 </span>
                 <span className="badge badge-type">{PET_TYPE_LABELS[pet.pet_type]}</span>
-                {pet.is_resolved && <span className="badge badge-resolved">✅ پیدا شد / حل شد</span>}
+                {pet.is_resolved && <span className="badge badge-resolved">✅ پیدا شد</span>}
               </div>
               <h1 className="detail-title">{pet.title}</h1>
               <p className="detail-location">📍 {pet.city}{pet.district ? ` — ${pet.district}` : ''}</p>
             </div>
+
+            {/* Sightings count badge */}
+            {pet.sightings.length > 0 && (
+              <div className="sightings-count-badge">
+                <span>👁️ {pet.sightings.length} گزارش مشاهده ثبت شده</span>
+                <a href="#sightings" className="text-xs text-pink">مشاهده همه ↓</a>
+              </div>
+            )}
 
             {/* Info Grid */}
             <div className="info-grid">
@@ -171,11 +216,18 @@ export default function PetDetailPage() {
               {pet.age && <InfoRow icon="📅" label="سن" value={pet.age} />}
               <InfoRow icon="🔗" label="قلاده" value={pet.has_collar ? 'دارد' : 'ندارد'} />
               {pet.microchip_id && <InfoRow icon="💾" label="میکروچیپ" value={pet.microchip_id} />}
-              {pet.contact_phone && <InfoRow icon="📞" label="تماس" value={pet.contact_phone} />}
+              {pet.contact_phone && (
+                <div className="info-row info-row-phone">
+                  <span className="info-icon">📞</span>
+                  <span className="info-label">تماس</span>
+                  <a href={`tel:${pet.contact_phone}`} className="info-value info-phone-link">
+                    {pet.contact_phone}
+                  </a>
+                </div>
+              )}
               {pet.reward > 0 && <InfoRow icon="🎁" label="مژدگانی" value={`${pet.reward.toLocaleString('fa-IR')} تومان`} highlight />}
             </div>
 
-            {/* Special features */}
             {pet.special_features && (
               <div className="detail-block">
                 <h3 className="detail-section-title">✨ ویژگی‌های خاص</h3>
@@ -183,7 +235,6 @@ export default function PetDetailPage() {
               </div>
             )}
 
-            {/* Address */}
             {pet.address_description && (
               <div className="detail-block">
                 <h3 className="detail-section-title">📍 توضیحات محل</h3>
@@ -210,9 +261,9 @@ export default function PetDetailPage() {
           </div>
         </div>
 
-        {/* Sightings */}
+        {/* Sightings section */}
         {pet.sightings.length > 0 && (
-          <div className="sightings-section">
+          <div className="sightings-section" id="sightings">
             <h2 className="detail-section-title" style={{ fontSize: '1.2rem', marginBottom: 20 }}>
               👁️ گزارش‌های دیده‌شدن ({pet.sightings.length})
             </h2>
@@ -225,7 +276,7 @@ export default function PetDetailPage() {
                       {new Date(s.seen_at).toLocaleDateString('fa-IR')}
                     </span>
                   </div>
-                  {s.user_phone && <p className="text-xs text-muted">📞 {s.user_phone}</p>}
+                  {s.user_phone && <p className="text-xs text-muted">👤 {s.user_phone}</p>}
                   {s.image && (
                     <img src={absUrl(s.image) || ''} alt="دیده‌شدن" className="sighting-img" />
                   )}
@@ -233,7 +284,7 @@ export default function PetDetailPage() {
                     <div className="sighting-map-wrap">
                       <MapContainer
                         center={[parseFloat(s.latitude), parseFloat(s.longitude)]}
-                        zoom={13}
+                        zoom={14}
                         className="sighting-map"
                         dragging={false}
                         scrollWheelZoom={false}
@@ -249,7 +300,38 @@ export default function PetDetailPage() {
             </div>
           </div>
         )}
+
+        {/* Empty sightings CTA */}
+        {pet.sightings.length === 0 && !pet.is_resolved && isAuthenticated && !isOwner && (
+          <div className="sightings-empty-cta">
+            <p>🔍 هنوز هیچ گزارش مشاهده‌ای ثبت نشده.</p>
+            <button className="btn btn-outline" onClick={() => setShowSightingModal(true)}>
+              👁️ اولین گزارش رو ثبت کنید
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* ── Modals ── */}
+      {showSightingModal && (
+        <SightingModal
+          reportId={pet.id}
+          reportTitle={pet.title}
+          centerLat={lat ?? undefined}
+          centerLng={lng ?? undefined}
+          onClose={() => setShowSightingModal(false)}
+          onSuccess={loadPet}
+        />
+      )}
+      {showFoundModal && (
+        <FoundModal
+          reportId={pet.id}
+          reportTitle={pet.title}
+          contactPhone={pet.contact_phone}
+          onClose={() => setShowFoundModal(false)}
+          onSuccess={loadPet}
+        />
+      )}
     </div>
   );
 }

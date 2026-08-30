@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import HomePage       from './pages/HomePage';
 import PetDetailPage  from './pages/PetDetailPage';
 import CreatePetPage  from './pages/CreatePetPage';
+import EditPetPage    from './pages/EditPetPage';
 import MyReportsPage  from './pages/MyReportsPage';
 import MapPage        from './pages/MapPage';
 import LoginPage      from './pages/LoginPage';
@@ -31,6 +32,7 @@ function AppRoutes() {
           <Route path="/login"      element={<LoginPage />} />
           <Route path="/register"   element={<RegisterPage />} />
           <Route path="/create"     element={<ProtectedRoute><CreatePetPage /></ProtectedRoute>} />
+          <Route path="/edit/:id"   element={<ProtectedRoute><EditPetPage /></ProtectedRoute>} />
           <Route path="/my-reports" element={<ProtectedRoute><MyReportsPage /></ProtectedRoute>} />
           <Route path="*"           element={<Navigate to="/" replace />} />
         </Routes>
