@@ -71,9 +71,11 @@ urlpatterns = [
     path('api/docs/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
+import os
 from django.urls import re_path
 from django.views.static import serve
 
-urlpatterns += [
-    re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
-]
+if settings.DEBUG or os.getenv('SERVE_MEDIA_LOCAL', 'False').lower() in ('true', '1'):
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]

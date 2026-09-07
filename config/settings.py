@@ -16,11 +16,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
 # Quick-start development settings - unsuitable for production
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-change-this')
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
 
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-change-this' if DEBUG else '')
+if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith('django-insecure-default')):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured("SECRET_KEY environment variable must be set in production when DEBUG=False.")
 
-ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(',') if host.strip()]
+allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '')
+if allowed_hosts_env:
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
+else:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web', '0.0.0.0'] if DEBUG else []
+
 
 
 try:
@@ -250,15 +258,34 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL', 'True' if DEBUG else 'False') == 'True'
 cors_origins_env = os.getenv('CORS_ALLOWED_ORIGINS', '')
 if cors_origins_env:
     CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
+    CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL', 'False').lower() in ('true', '1')
+else:
+    CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL', 'True' if DEBUG else 'False').lower() in ('true', '1')
 
-# Security Headers
+# CSRF Trusted Origins
+csrf_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_env.split(',') if origin.strip()]
+
+# Security Headers & Hardening
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+
+if not DEBUG:
+    SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False').lower() in ('true', '1')
+    SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True').lower() in ('true', '1')
+    CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True').lower() in ('true', '1')
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    hsts_seconds = int(os.getenv('SECURE_HSTS_SECONDS', 0))
+    if hsts_seconds > 0:
+        SECURE_HSTS_SECONDS = hsts_seconds
+        SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'True').lower() in ('true', '1')
+        SECURE_HSTS_PRELOAD = os.getenv('SECURE_HSTS_PRELOAD', 'True').lower() in ('true', '1')
+
 
 # Structured Logging
 LOGGING = {

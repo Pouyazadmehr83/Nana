@@ -2,6 +2,8 @@
 *__pycache__*
 db.sqlite3
 .env
+.env.*
+!.env.example
 .venv
 env/
 venv/
@@ -10,3 +12,4 @@ media/
 .idea/
 .vscode/
 *.log
+

@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${DB_USER:-nana_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-nana_password}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
     container_name: nana_redis
     restart: always
     ports:
-      - "6380:6379"
+      - "127.0.0.1:6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -35,13 +35,12 @@ services:
     build: .
     container_name: nana_django
     restart: always
-    # entrypoint.sh اجرای migrate+collectstatic را پیش از gunicorn انجام می‌دهد
     volumes:
       - .:/app
       - staticfiles_data:/app/staticfiles
       - media_data:/app/media
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     env_file:
       - .env
     environment:
@@ -49,6 +48,12 @@ services:
       - DB_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy
@@ -88,7 +93,8 @@ services:
       - staticfiles_data:/app/staticfiles:ro
       - media_data:/app/media:ro
     depends_on:
-      - web
+      web:
+        condition: service_healthy
 
 volumes:
   postgres_data:
