@@ -30,7 +30,9 @@ RUN chmod +x /app/entrypoint.sh && \
     chown -R appuser:appuser /app
 
 # Switch to non-root user
+ENV HOME=/app
 USER appuser
+
 
 # Expose port
 EXPOSE 8000

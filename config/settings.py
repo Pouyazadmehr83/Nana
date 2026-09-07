@@ -18,16 +18,32 @@ load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 't')
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-change-this' if DEBUG else '')
-if not DEBUG and (not SECRET_KEY or SECRET_KEY.startswith('django-insecure-default')):
-    from django.core.exceptions import ImproperlyConfigured
-    raise ImproperlyConfigured("SECRET_KEY environment variable must be set in production when DEBUG=False.")
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-dev-default-key-change-in-production'
+    else:
+        import logging
+        logging.getLogger('django.security').warning(
+            "SECURITY WARNING: SECRET_KEY is not set in environment variables! "
+            "Using Render deployment fallback key. Please configure SECRET_KEY in your Render dashboard."
+        )
+        SECRET_KEY = 'django-insecure-render-' + os.getenv('RENDER_SERVICE_ID', 'fallback-key-please-set-in-env')
 
 allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '')
 if allowed_hosts_env:
     ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
 else:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web', '0.0.0.0'] if DEBUG else []
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'web', '0.0.0.0']
+
+# Automatic support for Render and cloud hostnames
+render_host = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if render_host and render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_host)
+if os.getenv('RENDER') or render_host:
+    if '.onrender.com' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append('.onrender.com')
+
 
 
 
@@ -269,6 +285,17 @@ else:
 csrf_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 if csrf_origins_env:
     CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_env.split(',') if origin.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = []
+
+if render_host:
+    https_render_host = f'https://{render_host}'
+    if https_render_host not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(https_render_host)
+if os.getenv('RENDER') or render_host:
+    if 'https://*.onrender.com' not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append('https://*.onrender.com')
+
 
 # Security Headers & Hardening
 SECURE_BROWSER_XSS_FILTER = True
